@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ISL Data Acquisition Layer</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Data Acquisition Layer</p>
+          <h1>Capture hand landmark sequences for ISL datasets.</h1>
+          <p class="lede">
+            Webcam-only capture, MediaPipe Hand Landmarker overlay, fixed-length landmark
+            sequences, and JSON/CSV export without storing raw video.
+          </p>
+        </div>
+        <div class="status-card">
+          <span id="cameraStatus" class="status-pill">Camera idle</span>
+          <span id="modelStatus" class="status-pill">Model not loaded</span>
+          <span id="fpsCounter" class="fps">0 FPS</span>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <div class="stage">
+          <div id="videoFrame" class="video-frame">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="overlay"></canvas>
+            <div class="overlay-hud">
+              <span id="recordDot" class="record-dot" aria-hidden="true"></span>
+              <span id="recordState">Not recording</span>
+              <span id="recordTimer">00:00.0</span>
+            </div>
+          </div>
+          <p id="cameraHint" class="hint">
+            Allow camera access to begin. Use <kbd>Space</kbd> to start or stop recording.
+          </p>
+          <p id="errorBox" class="error-box" role="alert" hidden></p>
+        </div>
+
+        <aside class="panel">
+          <label class="field">
+            <span>Current sign label</span>
+            <input id="labelInput" type="text" value="Hello" placeholder="e.g. Hello" />
+          </label>
+
+          <label class="field">
+            <span>Recording duration (ms)</span>
+            <input id="durationInput" type="number" min="250" step="250" value="2000" />
+          </label>
+
+          <div class="button-row">
+            <button id="recordButton" class="primary">Start Recording</button>
+            <button id="discardButton" class="secondary">Discard Last Sequence</button>
+          </div>
+
+          <div class="button-row">
+            <button id="exportJsonButton" class="secondary">Export Dataset (JSON)</button>
+            <button id="exportCsvButton" class="secondary">Export Dataset (CSV)</button>
+          </div>
+
+          <button id="clearButton" class="danger">Clear All</button>
+
+          <div class="metrics">
+            <p id="sequenceCounter">Recorded 0 sequences for label: Hello</p>
+            <p>Fixed sequence length: <strong>30 frames</strong></p>
+            <p>Per-frame vector: <strong>126 numbers</strong></p>
+          </div>
+
+          <div class="legend">
+            <div><span class="swatch left"></span> Left hand</div>
+            <div><span class="swatch right"></span> Right hand</div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
