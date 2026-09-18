@@ -6,7 +6,7 @@ import logging
 import re
 import shutil
 import sys
-import tempfile
+import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +20,6 @@ if __package__ in (None, ""):
         sys.path.insert(0, str(SCRIPT_DIR))
 
 from augment import apply_augmentations
-from balance_report import create_balance_report
 from deduplicate import deduplicate_sequences
 from merge_sessions import merge_raw_sessions
 from split_dataset import (
@@ -33,18 +32,21 @@ from split_dataset import (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a versioned ISL landmark dataset.")
     parser.add_argument("--raw-dir", required=True, help="Directory containing raw JSON exports.")
-    parser.add_argument("--labels-config", required=True, help="Path to labels.json.")
+    parser.add_argument("--labels-config", default="labels.json", help="Path to labels.json.")
+    parser.add_argument("--validation-only", action="store_true",
+                        help="Validate, deduplicate, and write X_validation.npy without creating train/val/test splits.")
     parser.add_argument("--min-per-label", type=int, default=20, help="Minimum sequences required per label.")
     parser.add_argument("--augment", action="store_true", help="Enable data augmentation.")
     parser.add_argument("--augment-copies", type=int, default=3, help="Augmented copies to create per original sequence.")
     parser.add_argument(
         "--augment-types",
-        default="jitter,timewarp,mirror",
-        help="Comma-separated augmentation types: jitter,timewarp,mirror.",
+        default="jitter,timewarp",
+        help="Comma-separated augmentation types. Safe defaults are jitter,timewarp; mirror is opt-in.",
     )
     parser.add_argument("--split-ratio", default="70,15,15", help="Train,val,test ratios as percentages.")
     parser.add_argument("--output-version", default=None, help="Preferred version folder name, e.g. v1.")
-    parser.add_argument("--duplicate-threshold", type=float, default=0.015, help="Mean absolute difference threshold.")
+    parser.add_argument("--duplicate-threshold", type=float, default=None,
+                        help="Optional near-duplicate threshold. Disabled by default; exact content fingerprints are always removed.")
     parser.add_argument("--quantize-decimals", type=int, default=2, help="Decimals for duplicate quantization hash.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for split and augmentation.")
     return parser.parse_args()
@@ -59,11 +61,11 @@ def main() -> int:
     processed_root = project_root / "dataset" / "processed"
     processed_root.mkdir(parents=True, exist_ok=True)
 
+    requested_version = normalize_version_name(args.output_version) if args.output_version else None
+    final_version_name, supersedes_version = resolve_version_name(processed_root, requested_version)
     labels = load_labels_config(labels_config_path)
     split_ratio = parse_split_ratio(args.split_ratio)
     augment_types = parse_augment_types(args.augment_types)
-    requested_version = normalize_version_name(args.output_version) if args.output_version else None
-    final_version_name, supersedes_version = resolve_version_name(processed_root, requested_version)
 
     logging.info("validate -> loading raw exports")
     merge_result = merge_raw_sessions(raw_dir, set(labels))
@@ -72,7 +74,7 @@ def main() -> int:
 
     logging.info("merge -> %d files, %d sequences found, %d valid, %d rejected", len(merge_result.source_files), merge_result.total_sequences_found, len(valid_sequences), len(rejected_sequences))
 
-    logging.info("dedup -> removing near duplicates")
+    logging.info("dedup -> removing exact repeated recordings")
     dedup_result = deduplicate_sequences(
         valid_sequences,
         similarity_threshold=args.duplicate_threshold,
@@ -83,7 +85,13 @@ def main() -> int:
 
     version_path = stage_version_directory(processed_root, final_version_name)
     try:
+        if args.validation_only:
+            save_validation_dataset(version_path, deduped_sequences, labels, rejected_sequences, dedup_result.removed_sequences)
+            finalize_version_directory(version_path, processed_root / final_version_name)
+            logging.info("pipeline validation dataset completed at %s", processed_root / final_version_name)
+            return 0
         logging.info("balance-check -> validating class distribution")
+        from balance_report import create_balance_report
         balance_report = create_balance_report(
             deduped_sequences,
             version_path,
@@ -194,6 +202,33 @@ def save_versioned_dataset(
     )
     write_json(version_path / "dataset_manifest.json", manifest)
     write_text(version_path / "dataset_report.md", build_dataset_report(manifest, balance_report.markdown))
+
+
+def save_validation_dataset(
+    version_path: Path,
+    sequences: list[dict[str, Any]],
+    allowed_labels: list[str],
+    rejected_sequences: list[dict[str, Any]],
+    removed_sequences: list[dict[str, Any]],
+) -> None:
+    """Write a non-trainable three-recording validation artifact without fabricating a split."""
+    labels_present = sorted({sequence["label"] for sequence in sequences})
+    missing = sorted(set(allowed_labels) - set(labels_present))
+    if missing:
+        raise ValueError(f"Pipeline validation is missing active label(s): {', '.join(missing)}.")
+    from sklearn.preprocessing import LabelEncoder
+    encoder = LabelEncoder().fit(allowed_labels)
+    payload = build_encoder_payload_from_classes(encoder.classes_.tolist())
+    save_label_encoder(payload, version_path / "label_encoder.json")
+    x_values, y_values = sequences_to_numpy(sequences, build_label_encoder(payload))
+    np.save(version_path / "X_validation.npy", x_values.astype(np.float32))
+    np.save(version_path / "y_validation.npy", y_values.astype(np.int64))
+    write_json(version_path / "pipeline_validation.json", {
+        "purpose": "structural pipeline validation only; not a trainable split",
+        "labels": payload["classes"], "shape": list(x_values.shape),
+        "accepted_sequences": len(sequences), "rejected_sequences": rejected_sequences,
+        "deduplicated_sequences": removed_sequences,
+    })
 
 
 def build_manifest(
@@ -331,10 +366,10 @@ def load_labels_config(labels_config_path: Path) -> list[str]:
 
     if isinstance(payload, list):
         labels = [str(label).strip() for label in payload if str(label).strip()]
-    elif isinstance(payload, dict) and "labels" in payload and isinstance(payload["labels"], list):
-        labels = [str(label).strip() for label in payload["labels"] if str(label).strip()]
+    elif isinstance(payload, dict) and isinstance(payload.get("active_labels"), list):
+        labels = [str(label).strip() for label in payload["active_labels"] if str(label).strip()]
     else:
-        raise ValueError("labels.json must contain a list of labels or an object with a labels list.")
+        raise ValueError("labels.json must contain an active_labels list.")
 
     if not labels:
         raise ValueError("labels.json does not contain any labels.")
@@ -387,7 +422,8 @@ def stage_version_directory(processed_root: Path, version_name: str) -> Path:
     processed_root.mkdir(parents=True, exist_ok=True)
     staging_parent = processed_root / ".staging"
     staging_parent.mkdir(parents=True, exist_ok=True)
-    staging_path = Path(tempfile.mkdtemp(prefix=f"{version_name}_", dir=staging_parent))
+    staging_path = staging_parent / f"{version_name}_{uuid.uuid4().hex}"
+    staging_path.mkdir()
     return staging_path
 
 
@@ -433,6 +469,14 @@ def build_label_encoder(payload: dict[str, Any]):
             return np.asarray([self._label_to_index[label] for label in labels], dtype=np.int64)
 
     return Encoder(payload)
+
+
+def build_encoder_payload_from_classes(classes: list[str]) -> dict[str, Any]:
+    return {
+        "classes": classes,
+        "index_to_label": {str(index): label for index, label in enumerate(classes)},
+        "label_to_index": {label: index for index, label in enumerate(classes)},
+    }
 
 
 if __name__ == "__main__":

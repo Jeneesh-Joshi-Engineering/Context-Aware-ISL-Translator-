@@ -4,7 +4,10 @@ This folder contains the Python-only dataset preparation pipeline for ISL landma
 
 ## Raw Input
 
-Team members should drop one JSON export per recording session into `dataset/raw/`.
+Team members should drop one JSON export per recording session anywhere under `dataset/raw/`.
+Nested folders such as `HELP SIGN/session1.json` are discovered recursively.
+Folder names are for organisation only: every sequence's JSON `label` must still
+exactly match an entry in `labels.json`.
 
 Recommended naming:
 
@@ -12,7 +15,14 @@ Recommended naming:
 - `jeneesh_session1.json`
 - `shreya_session2.json`
 
-Each file must contain an array of sequence objects exported by the acquisition layer.
+Each file may be the JSON export object produced by the acquisition layer (with a
+`sequences` array) or a direct array of sequence objects.
+
+## Transit-Hub MVP Vocabulary
+
+The first model is intentionally limited to: `Help`, `Train_Ticket`, and
+`No_Gesture`. Keep labels exactly as written in `labels.json`; do not mix historical
+or future labels into this active dataset.
 
 ## Run The Pipeline
 
@@ -22,10 +32,18 @@ Example:
 python scripts/build_dataset.py \
   --raw-dir dataset/raw \
   --labels-config labels.json \
-  --min-per-label 20 \
-  --augment --augment-copies 3 --augment-types jitter,timewarp,mirror \
+  --min-per-label 50 \
+  --augment --augment-copies 2 --augment-types jitter,timewarp \
   --split-ratio 70,15,15 \
   --output-version v1
+```
+
+Train the resulting version with:
+
+```bash
+python scripts/train_bilstm.py \
+  --data-dir dataset/processed/v1 \
+  --output-dir saved_model/transit_v1
 ```
 
 ## Outputs
@@ -47,3 +65,11 @@ Files in a processed version folder:
 - No raw video or image data is expected here.
 - Augmentation can be disabled entirely with CLI flags.
 - The pipeline never overwrites an existing processed version folder.
+- Training also refuses to overwrite an existing `model.h5`; the earlier
+  one-class artifact under `data-collection/dataset/processed/v1` / `saved_model/v1`
+  is historical and must not be deployed.
+- `load_and_merge.py`, `preprocess_and_split.py`, and `run_all.py` are legacy;
+  do not use them for new recordings because they bypass the active validation path.
+- For one recording of each active label, run `build_dataset.py` with
+  `--validation-only --output-version pipeline-check`. It writes a structural
+  report and does not create a misleading train/validation/test split.

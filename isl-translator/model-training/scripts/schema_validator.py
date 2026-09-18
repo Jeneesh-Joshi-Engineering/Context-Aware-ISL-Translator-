@@ -11,6 +11,7 @@ import numpy as np
 
 EXPECTED_SEQUENCE_LENGTH = 30
 EXPECTED_VECTOR_LENGTH = 126
+MAX_EMPTY_FRAME_RATIO = 0.20
 ALLOWED_HANDEDNESS = {"Left", "Right"}
 RAW_SEQUENCE_KEYS = {"label", "timestamp", "handedness", "frames"}
 DISALLOWED_MEDIA_KEYS = {
@@ -70,13 +71,24 @@ def validate_raw_export_file(
             source_file=source_name,
         )
 
-    if not isinstance(payload, list):
+    sequences_payload = payload
+    if isinstance(payload, dict) and "sequences" in payload:
+        schema = payload.get("schema")
+        if schema != "isl.data-acquisition.v1":
+            return ValidationResult(
+                valid_sequences=[],
+                rejected_sequences=[build_rejection_record(payload, "Export wrapper schema must be 'isl.data-acquisition.v1'.", source_name, None)],
+                source_file=source_name,
+            )
+        sequences_payload = payload["sequences"]
+
+    if not isinstance(sequences_payload, list):
         return ValidationResult(
             valid_sequences=[],
             rejected_sequences=[
                 build_rejection_record(
                     raw_sequence=payload,
-                    reason="Top-level JSON payload must be a list of sequences.",
+                    reason="Top-level JSON payload must be a sequence list or an export object with a 'sequences' list.",
                     source_file=source_name,
                     source_index=None,
                 )
@@ -87,7 +99,7 @@ def validate_raw_export_file(
     valid_sequences: list[dict[str, Any]] = []
     rejected_sequences: list[dict[str, Any]] = []
 
-    for sequence_index, raw_sequence in enumerate(payload):
+    for sequence_index, raw_sequence in enumerate(sequences_payload):
         normalized, rejection_reason = validate_sequence(raw_sequence, allowed_labels)
         if rejection_reason is not None:
             rejected_sequences.append(
@@ -158,6 +170,7 @@ def validate_sequence(
         return None, f"Frames must contain exactly {EXPECTED_SEQUENCE_LENGTH} frames."
 
     normalized_frames: list[list[float]] = []
+    empty_frame_count = 0
     for frame_index, frame in enumerate(frames):
         if not isinstance(frame, list) or len(frame) != EXPECTED_VECTOR_LENGTH:
             return None, f"Frame {frame_index} must contain exactly {EXPECTED_VECTOR_LENGTH} numeric values."
@@ -169,6 +182,14 @@ def validate_sequence(
                 return None, f"Frame {frame_index} contains a non-numeric or invalid value at index {value_index}."
             normalized_frame.append(numeric_value)
         normalized_frames.append(normalized_frame)
+        if np.allclose(normalized_frame, 0.0):
+            empty_frame_count += 1
+
+    if empty_frame_count / EXPECTED_SEQUENCE_LENGTH > MAX_EMPTY_FRAME_RATIO:
+        return None, (
+            f"Sequence has {empty_frame_count}/{EXPECTED_SEQUENCE_LENGTH} empty frames; "
+            f"maximum allowed is {MAX_EMPTY_FRAME_RATIO:.0%}."
+        )
 
     normalized_sequence = {
         "label": normalized_label,
@@ -216,4 +237,3 @@ def coerce_numeric(value: Any) -> float | None:
         return numeric_value
 
     return None
-

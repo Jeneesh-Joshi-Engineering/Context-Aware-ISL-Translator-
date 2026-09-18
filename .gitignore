@@ -1,0 +1,41 @@
+# Secrets and local configuration — never commit credentials or private keys.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+**/credentials.json
+
+# Local language environments and dependency folders.
+.venv/
+venv/
+env/
+**/__pycache__/
+*.py[cod]
+node_modules/
+**/node_modules/
+
+# Java / Maven build output.
+target/
+**/target/
+
+# Generated ML training data, caches, and model artefacts.
+# The deployable browser model in isl-translator/frontend/model/ is intentional.
+**/work/
+**/outputs/
+**/.cache/
+*.h5
+*.keras
+*.weights.h5
+*.npy
+*.tflite
+*.onnx
+
+# IDE and operating-system files.
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

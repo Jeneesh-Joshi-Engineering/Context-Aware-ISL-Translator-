@@ -1,0 +1,27 @@
+{
+  "model_type": "BiLSTM",
+  "num_classes": 4,
+  "num_frames": 30,
+  "num_features": 126,
+  "label_mapping": {
+    "Help": 0,
+    "No_Gesture": 1,
+    "Ticket": 2,
+    "Train": 3
+  },
+  "test_accuracy": 0.8181818127632141,
+  "test_loss": 1.5599396228790283,
+  "training_epochs": 66,
+  "confidence_threshold": 0.7,
+  "framework": "TensorFlow/Keras",
+  "input_shape": [
+    30,
+    126
+  ],
+  "output_classes": [
+    "Help",
+    "No_Gesture",
+    "Ticket",
+    "Train"
+  ]
+}

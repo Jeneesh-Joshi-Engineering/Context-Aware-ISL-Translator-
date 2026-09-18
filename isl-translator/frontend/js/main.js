@@ -7,6 +7,11 @@ import {
 } from "./landmarker.js";
 import { createRecorder, DEFAULT_RECORDING_DURATION_MS } from "./recorder.js";
 import { exportDatasetAsCsv, exportDatasetAsJson } from "./exporter.js";
+import { createInference } from "./inference.js";
+import { createWsClient } from "./wsClient.js";
+import { createFallback } from "./fallback.js";
+import { createSpeechToText } from "./speechToText.js";
+import { exportKpisCsv, logKpi } from "./kpiLogger.js";
 
 const elements = {
   video: document.getElementById("video"),
@@ -27,6 +32,7 @@ const elements = {
   sequenceCounter: document.getElementById("sequenceCounter"),
   errorBox: document.getElementById("errorBox"),
   cameraHint: document.getElementById("cameraHint"),
+  modeInput: document.getElementById("modeInput"), predictionText: document.getElementById("predictionText"), inferenceLatency: document.getElementById("inferenceLatency"), fallbackState: document.getElementById("fallbackState"), sentenceText: document.getElementById("sentenceText"), officialResponseText: document.getElementById("officialResponseText"), spellingPanel: document.getElementById("spellingPanel"), spellingInput: document.getElementById("spellingInput"), resolveFallbackButton: document.getElementById("resolveFallbackButton"), speechButton: document.getElementById("speechButton"), exportKpiButton: document.getElementById("exportKpiButton"),
 };
 
 const fpsSamples = [];
@@ -45,6 +51,7 @@ const appState = {
   currentCanvasWidth: 0,
   currentCanvasHeight: 0,
   overlayContext: null,
+  inference: null, ws: null, fallback: null, speech: null, lastKeywordAt: 0,
 };
 
 bindUI();
@@ -58,6 +65,10 @@ function bindUI() {
   elements.clearButton.addEventListener("click", clearAllSequences);
   elements.durationInput.addEventListener("change", handleDurationChange);
   elements.labelInput.addEventListener("input", syncCounters);
+  elements.modeInput.addEventListener("change", syncMode);
+  elements.resolveFallbackButton.addEventListener("click", resolveFallback);
+  elements.exportKpiButton.addEventListener("click", exportKpisCsv);
+  elements.speechButton.addEventListener("click", () => appState.speech?.startListening());
   window.addEventListener("keydown", handleKeyboardShortcut);
   window.addEventListener("beforeunload", cleanup);
   window.addEventListener("resize", syncCanvasSize);
@@ -97,6 +108,7 @@ async function boot() {
   appState.overlayContext = elements.overlay.getContext("2d");
   syncCounters();
   requestAnimationFrame(processFrame);
+  initializeConversation();
 }
 
 async function processFrame(now) {
@@ -123,6 +135,7 @@ async function processFrame(now) {
         if (recorder.getState().isRecording) {
           recorder.recordFrame(observation.frameVector, observation.handednessSlots);
         }
+        if (elements.modeInput.value === "translate") appState.inference?.pushFrame(observation.frameVector);
       }
     } catch (error) {
       showError(`Landmark detection failed: ${error.message || error}`);
@@ -133,11 +146,26 @@ async function processFrame(now) {
   requestAnimationFrame(processFrame);
 }
 
+async function initializeConversation() {
+  const params = new URLSearchParams(location.search), sessionId = params.get("sessionId") || "demo-session", role = params.get("role") || "deaf_user";
+  appState.fallback = createFallback({ onChange: state => { elements.fallbackState.textContent=state; elements.spellingPanel.hidden=state!=="FALLBACK_SPELLING"; } });
+  appState.ws = createWsClient({sessionId, role, onStatus: status => setStatus(elements.modelStatus, status), onMessage: message => {
+    if(message.type === "SENTENCE_GENERATED") { elements.sentenceText.textContent=message.generatedSentence; logKpi("sentence_received",{latencyMs:performance.now()-appState.lastKeywordAt}); }
+    if(message.type === "OFFICIAL_RESPONSE") { elements.officialResponseText.textContent=message.transcribedText; logKpi("speech_transcribed"); }
+    if(message.type === "ERROR") showError(message.errorMessage);
+  }});
+  if(role === "official") { elements.speechButton.hidden=false; appState.speech=createSpeechToText({onFinal:text=>appState.ws.sendOfficialResponse(text),onError:showError}); }
+  try { appState.inference=await createInference({onPrediction: prediction => { appState.fallback.observeConfidence(); elements.predictionText.textContent=`${prettyLabel(prediction.label)} (${(prediction.confidence*100).toFixed(0)}%)`; if(role==="deaf_user"){appState.lastKeywordAt=performance.now();appState.ws.sendKeyword(prediction.label,prediction.confidence);}},onNoGesture: prediction => { appState.fallback.observeConfidence(); elements.predictionText.textContent=`No gesture (${(prediction.confidence*100).toFixed(0)}%)`; },onLowConfidence:()=>appState.fallback.observeLowConfidence(),onLatency:latency=>elements.inferenceLatency.textContent=`${latency.toFixed(1)} ms`}); } catch(error) { console.warn("Translation model unavailable; recording remains available.",error); }
+}
+function syncMode() { const translating=elements.modeInput.value==="translate"; elements.recordButton.disabled=translating; elements.predictionText.textContent=translating?"Waiting for 30 frames…":"Recording mode"; }
+function resolveFallback() { const text=elements.spellingInput.value.trim(); if(text&&appState.ws) { appState.lastKeywordAt=performance.now(); appState.ws.sendKeyword(text,1); } elements.spellingInput.value=""; appState.fallback?.resolve(); }
+function prettyLabel(value) { return value.replaceAll("_", " "); }
+
 function toggleRecording() {
   const label = getLabel();
   const durationMs = getDurationMs();
   if (!label) {
-    showError("Please enter a label before recording.");
+    showError("Type any label before recording.");
     return;
   }
 
@@ -207,7 +235,9 @@ function syncRecorderState() {
 function syncCounters() {
   const label = getLabel();
   const count = label ? recorder.getSequenceCountForLabel(label) : 0;
-  elements.sequenceCounter.textContent = `Recorded ${count} sequences for label: ${label || "n/a"}`;
+  elements.sequenceCounter.textContent = label
+    ? `Recorded ${count} sequences for label: ${label}`
+    : "Recorded 0 sequences for current label";
 }
 
 function syncRecorderHud() {
@@ -215,7 +245,7 @@ function syncRecorderHud() {
   elements.overlay.classList.toggle("recording", state.isRecording);
   elements.recordButton.textContent = state.isRecording ? "Stop Recording" : "Start Recording";
   elements.recordState.textContent = state.isRecording
-    ? `Recording ${getLabel() || state.recordingLabel}`
+    ? `Recording ${state.recordingLabel}`
     : "Not recording";
   elements.recordTimer.textContent = state.isRecording ? formatRemaining() : "00:00.0";
   elements.recordDot.style.background = state.isRecording ? "var(--danger)" : "rgba(255, 255, 255, 0.3)";
@@ -286,6 +316,7 @@ function clearError() {
 }
 
 function cleanup() {
+  appState.ws?.close();
   if (appState.stream) {
     for (const track of appState.stream.getTracks()) {
       track.stop();

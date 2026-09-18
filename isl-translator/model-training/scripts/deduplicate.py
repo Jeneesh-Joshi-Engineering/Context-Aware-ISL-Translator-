@@ -16,7 +16,7 @@ class DeduplicationResult:
 
 def deduplicate_sequences(
     sequences: list[dict[str, Any]],
-    similarity_threshold: float = 0.015,
+    similarity_threshold: float | None = None,
     quantize_decimals: int = 2,
 ) -> DeduplicationResult:
     kept_sequences: list[dict[str, Any]] = []
@@ -29,7 +29,7 @@ def deduplicate_sequences(
         duplicate_of = None
 
         for representative in label_representatives:
-            if are_near_duplicates(
+            if are_duplicates(
                 sequence["frames"],
                 representative["frames"],
                 similarity_threshold=similarity_threshold,
@@ -46,7 +46,7 @@ def deduplicate_sequences(
         removed_sequences.append(
             {
                 "label": label,
-                "reason": "near-duplicate sequence removed",
+                "reason": "duplicate recording removed by exact content fingerprint",
                 "removed_sequence_id": sequence.get("sequence_id"),
                 "removed_source_file": sequence.get("source_file"),
                 "removed_timestamp": sequence.get("timestamp"),
@@ -62,10 +62,10 @@ def deduplicate_sequences(
     )
 
 
-def are_near_duplicates(
+def are_duplicates(
     frames_a: Any,
     frames_b: Any,
-    similarity_threshold: float = 0.015,
+    similarity_threshold: float | None = None,
     quantize_decimals: int = 2,
 ) -> bool:
     array_a = np.asarray(frames_a, dtype=np.float32)
@@ -78,12 +78,17 @@ def are_near_duplicates(
     if signature_a == signature_b:
         return True
 
+    if similarity_threshold is None:
+        return False
     mean_absolute_difference = float(np.mean(np.abs(array_a - array_b)))
     return mean_absolute_difference <= similarity_threshold
+
+
+# Backwards-compatible name for callers that intentionally opt into a threshold.
+are_near_duplicates = are_duplicates
 
 
 def quantized_signature(array: np.ndarray, quantize_decimals: int) -> str:
     quantized = np.round(array, decimals=quantize_decimals)
     payload = quantized.astype(np.float32).tobytes()
     return hashlib.sha1(payload).hexdigest()
-

@@ -1,0 +1,20 @@
+{
+  "classes": [
+    "Help",
+    "No_Gesture",
+    "Ticket",
+    "Train"
+  ],
+  "index_to_label": {
+    "0": "Help",
+    "1": "No_Gesture",
+    "2": "Ticket",
+    "3": "Train"
+  },
+  "label_to_index": {
+    "Help": 0,
+    "No_Gesture": 1,
+    "Ticket": 2,
+    "Train": 3
+  }
+}

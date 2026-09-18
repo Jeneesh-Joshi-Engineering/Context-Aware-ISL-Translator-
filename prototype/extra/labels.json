@@ -1,0 +1,69 @@
+{
+  "domain": "transit_hub",
+  "description": "Vocabulary for AI-based ISL translation system, scoped to public transit hubs (railway stations, bus terminals, airports).",
+  "tier_1_baseline": [
+    "Help",
+    "Train",
+    "Ticket",
+    "No_Gesture"
+  ],
+  "tier_2_expansion": {
+    "batch_A_urgent_situational": [
+      "Lost",
+      "Problem",
+      "Police",
+      "Security",
+      "Medical_Help_Emergency"
+    ],
+    "batch_B_navigation_wayfinding": [
+      "Where",
+      "Platform",
+      "Counter",
+      "Washroom",
+      "Exit",
+      "Entrance",
+      "Left",
+      "Right",
+      "Straight"
+    ],
+    "batch_C_transactional": [
+      "Money_Pay",
+      "Luggage_Bag",
+      "Reservation",
+      "Receipt",
+      "Change_Exchange",
+      "Cancel",
+      "Schedule"
+    ],
+    "batch_D_transit_modes_and_info": [
+      "Bus",
+      "Flight",
+      "Seat",
+      "Information",
+      "Late_Delay",
+      "When",
+      "Now",
+      "Next"
+    ],
+    "batch_E_social_communication": [
+      "Yes",
+      "No",
+      "Please",
+      "Thank_You",
+      "Deaf",
+      "Understand",
+      "Not_Understand",
+      "Wait"
+    ]
+  },
+  "all_labels_flat": [
+    "Help", "Train", "Ticket", "No_Gesture",
+    "Lost", "Where", "When", "Problem", "Police", "Security",
+    "Medical_Help_Emergency", "Money_Pay", "Luggage_Bag", "Bus", "Flight",
+    "Platform", "Counter", "Washroom", "Exit", "Entrance", "Seat",
+    "Reservation", "Receipt", "Change_Exchange", "Information", "Late_Delay",
+    "Now", "Next", "Left", "Right", "Straight", "Cancel", "Schedule",
+    "Yes", "No", "Please", "Thank_You", "Deaf", "Understand",
+    "Not_Understand", "Wait"
+  ]
+}

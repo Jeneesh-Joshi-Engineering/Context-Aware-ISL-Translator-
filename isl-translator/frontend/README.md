@@ -1,6 +1,11 @@
-# ISL Data Acquisition Layer
+# ISL Bridge Frontend
 
-This folder contains the browser-only webcam capture layer for building a hand landmark dataset.
+This folder now contains two synchronized static apps for the session-broker backend:
+
+- `index.html` — signer device: creates a session, shares its QR/code, then starts the camera and BiLSTM translation view after the official joins.
+- `official.html` — official device: scans or enters a session code, receives the same chat stream, and sends voice or typed responses.
+
+Both pages use `js/shared.js` for STOMP-over-SockJS transport, session-history backfill, reconnect status, and the shared bilingual chat renderer. The backend is expected at port `8080` on the same host name as the static app.
 
 ## Run It
 
@@ -10,11 +15,11 @@ Serve the `frontend/` folder with any static server, for example:
 npx serve .
 ```
 
-Open `index.html` through the server URL, not `file://`. Some browsers block camera permissions or ES module imports from local files.
+Open `index.html` and `official.html` through the server URL, not `file://`. Some browsers block camera permissions, QR scanning, or ES module imports from local files. Start the Spring Boot backend first, then open the two pages (on separate devices if desired).
 
 ## Record A Session
 
-1. Enter the current sign label.
+1. Type any sign label you want to collect. The label is saved exactly as typed after trimming extra spaces.
 2. Adjust the recording duration if needed.
 3. Press `Start Recording` or hit `Space`.
 4. Hold the gesture until the countdown ends, or press `Space` again to stop early.
@@ -35,7 +40,7 @@ The JSON download is named `isl_dataset_<timestamp>.json` and uses this schema:
   "frameVectorLength": 126,
   "sequences": [
     {
-      "label": "Hello",
+      "label": "Train_Ticket",
       "timestamp": "2026-08-01T00:00:00.000Z",
       "handedness": ["Right"],
       "frames": 30 arrays of 126 numeric values

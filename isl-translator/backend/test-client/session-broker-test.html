@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>ISL Bridge session-broker test</title>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<h1>ISL Bridge session-broker test</h1><p>Open this page twice. Create a code below, then use the same code with one SIGNER and one OFFICIAL client.</p>
+<button onclick="createSession()">Create session</button> <input id="session" placeholder="Session code"> <select id="role"><option>SIGNER</option><option>OFFICIAL</option></select> <button onclick="connect()">Connect / join</button><br><br>
+<input id="message" placeholder="Keyword (signer) or transcript (official)" size="55"> <button onclick="send()">Send</button><pre id="log"></pre>
+<script>
+let client; const log=x=>document.querySelector('#log').textContent+=x+'\n';
+async function createSession(){const r=await fetch('http://localhost:8080/api/sessions',{method:'POST'});document.querySelector('#session').value=(await r.json()).sessionId}
+function connect(){const id=document.querySelector('#session').value.toUpperCase(), role=document.querySelector('#role').value; client=new StompJs.Client({webSocketFactory:()=>new SockJS('http://localhost:8080/ws'),reconnectDelay:1000});client.onConnect=()=>{client.subscribe('/topic/session/'+id,m=>log(m.body));client.publish({destination:'/app/session/'+id+'/join',body:JSON.stringify({type:'SESSION_STATUS',sessionId:id,sender:role,payload:{}})});log('connected')};client.activate()}
+function send(){const id=document.querySelector('#session').value.toUpperCase(), role=document.querySelector('#role').value, value=document.querySelector('#message').value;const isSigner=role==='SIGNER';client.publish({destination:'/app/session/'+id+'/'+(isSigner?'keyword':'transcript'),body:JSON.stringify({type:isSigner?'KEYWORD_INPUT':'SPEECH_TRANSCRIPT',sessionId:id,sender:role,payload:isSigner?{keyword:value,confidence:.9}:{text:value}})})}
+</script>

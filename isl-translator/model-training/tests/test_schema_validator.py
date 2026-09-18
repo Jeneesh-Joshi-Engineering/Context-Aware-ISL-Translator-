@@ -13,11 +13,13 @@ if str(SCRIPT_DIR) not in sys.path:
 from schema_validator import EXPECTED_SEQUENCE_LENGTH, EXPECTED_VECTOR_LENGTH, validate_raw_export_file, validate_sequence
 
 
-ALLOWED_LABELS = {"Hello", "Help", "Emergency", "No_Gesture"}
+ALLOWED_LABELS = {"Help", "Train_Ticket", "No_Gesture"}
 
 
 def build_valid_sequence() -> dict:
-    frames = np.zeros((EXPECTED_SEQUENCE_LENGTH, EXPECTED_VECTOR_LENGTH), dtype=float).tolist()
+    # A real accepted sequence must contain visible landmark values; all-zero
+    # frames represent a failed hand detection and are rejected by the validator.
+    frames = np.ones((EXPECTED_SEQUENCE_LENGTH, EXPECTED_VECTOR_LENGTH), dtype=float).tolist()
     return {
         "label": "Help",
         "timestamp": "2026-08-01T10:15:00Z",
@@ -77,5 +79,22 @@ def test_validate_raw_export_file_rejects_non_array_payload(tmp_path):
     result = validate_raw_export_file(file_path, ALLOWED_LABELS)
     assert result.valid_count == 0
     assert result.rejected_count == 1
-    assert "Top-level JSON payload must be a list" in result.rejected_sequences[0]["reason"]
+    assert "Top-level JSON payload" in result.rejected_sequences[0]["reason"]
 
+
+def test_validate_raw_export_file_accepts_frontend_export_wrapper(tmp_path):
+    file_path = tmp_path / "export.json"
+    file_path.write_text(json.dumps({"schema": "isl.data-acquisition.v1", "sequences": [build_valid_sequence()]}), encoding="utf-8")
+
+    result = validate_raw_export_file(file_path, ALLOWED_LABELS)
+
+    assert result.valid_count == 1
+    assert result.rejected_count == 0
+
+
+def test_validate_sequence_rejects_excessive_empty_frames():
+    sequence = build_valid_sequence()
+    sequence["frames"][:7] = [[0.0] * EXPECTED_VECTOR_LENGTH for _ in range(7)]
+    normalized, reason = validate_sequence(sequence, ALLOWED_LABELS)
+    assert normalized is None
+    assert "empty frames" in reason

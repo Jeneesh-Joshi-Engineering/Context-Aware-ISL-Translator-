@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>ISL Backend Test Client</title><style>body{font:16px system-ui;margin:2rem;max-width:50rem}input,button{padding:.5rem}pre{background:#111;color:#ddd;padding:1rem;min-height:16rem;white-space:pre-wrap}</style></head>
+<body><h1>ISL Backend Test Client</h1><p id="state">Connecting…</p><input id="keyword" placeholder="e.g. Help" autofocus><button id="send">Send keyword</button><pre id="log"></pre><script>
+const log=document.querySelector('#log'), state=document.querySelector('#state'), input=document.querySelector('#keyword');
+const ws=new WebSocket('ws://localhost:8080/ws/conversation?sessionId=test1&role=deaf_user');
+function write(value){log.textContent+=value+'\n';log.scrollTop=log.scrollHeight}
+ws.onopen=()=>state.textContent='Connected as deaf_user (session test1)'; ws.onclose=()=>state.textContent='Disconnected'; ws.onerror=()=>state.textContent='Connection error'; ws.onmessage=e=>write(JSON.stringify(JSON.parse(e.data),null,2));
+function send(){const keyword=input.value.trim();if(!keyword)return;ws.send(JSON.stringify({type:'KEYWORD_DETECTED',sessionId:'test1',role:'deaf_user',keyword,confidence:.99,timestamp:new Date().toISOString()}));write('SENT: '+keyword);input.value=''}
+document.querySelector('#send').onclick=send;input.onkeydown=e=>{if(e.key==='Enter')send()};
+</script></body></html>

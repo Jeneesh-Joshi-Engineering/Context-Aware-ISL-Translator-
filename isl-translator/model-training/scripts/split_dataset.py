@@ -10,6 +10,8 @@ import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 
+MIN_GROUPS_PER_LABEL_FOR_THREE_WAY_SPLIT = 6
+
 
 @dataclass(frozen=True)
 class SplitResult:
@@ -33,6 +35,7 @@ def split_sequences(
     groups = build_groups(sequences)
     group_labels = [group["label"] for group in groups]
     group_members = [group["source_member"] for group in groups]
+    validate_three_way_split_capacity(group_labels)
 
     train_groups, val_groups, test_groups = stratified_group_split(
         groups,
@@ -76,6 +79,21 @@ def build_groups(sequences: list[dict[str, Any]]) -> list[dict[str, Any]]:
         )["sequences"].append(sequence)
 
     return list(grouped.values())
+
+
+def validate_three_way_split_capacity(group_labels: list[str]) -> None:
+    """Require enough independent recordings to keep every class in every split."""
+    counts: dict[str, int] = {}
+    for label in group_labels:
+        counts[label] = counts.get(label, 0) + 1
+    insufficient = {label: count for label, count in counts.items() if count < MIN_GROUPS_PER_LABEL_FOR_THREE_WAY_SPLIT}
+    if insufficient:
+        detail = ", ".join(f"{label}={count}" for label, count in sorted(insufficient.items()))
+        raise ValueError(
+            "A 70/15/15 stratified train/validation/test split needs at least "
+            f"{MIN_GROUPS_PER_LABEL_FOR_THREE_WAY_SPLIT} independent recordings per label; got {detail}. "
+            "Use --validation-only for the initial three-recording structural check."
+        )
 
 
 def stratified_group_split(

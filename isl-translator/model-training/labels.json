@@ -1,6 +1,4 @@
-[
-  "Hello",
-  "Help",
-  "Emergency",
-  "No_Gesture"
-]
+{
+  "domain": "transit_hub",
+  "active_labels": ["Help", "Train", "Ticket", "No_Gesture"]
+}

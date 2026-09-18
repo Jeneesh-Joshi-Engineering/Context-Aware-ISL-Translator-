@@ -30,7 +30,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -174,10 +175,15 @@ canvas {
 .hint,
 .metrics p,
 .field span,
+.field-help,
 .legend,
 .error-box {
   color: var(--muted);
 }
+
+.conversation { margin-top: 14px; padding: 14px; border-radius: 14px; background: rgba(255,255,255,.04); color: var(--muted); }
+.conversation p { margin: 6px 0; }
+.sentence { color: var(--text); font-size: 1.1rem; }
 
 .hint {
   margin: 14px 0 0;
@@ -202,13 +208,19 @@ canvas {
   gap: 8px;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   border: 1px solid var(--panel-border);
   border-radius: 14px;
   padding: 12px 14px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.05);
+}
+
+.field-help {
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .button-row {
