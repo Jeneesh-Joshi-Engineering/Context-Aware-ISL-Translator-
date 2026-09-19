@@ -6,17 +6,29 @@
 */
 
 export async function startCamera(videoElement) {
+  if (!window.isSecureContext) throw new Error("Camera access needs localhost or trusted HTTPS. Open the app on localhost on this laptop, or use HTTPS on your phone.");
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("Camera access is not supported in this browser.");
   }
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: 640, height: 480 },
+  let expired = false, timer;
+  const cameraRequest = navigator.mediaDevices.getUserMedia({
+    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user", frameRate: { ideal: 30, max: 30 } },
     audio: false,
+  }).then(stream => {
+    if (expired) { stream.getTracks().forEach(track => track.stop()); throw new Error("Camera permission arrived after the request expired. Please retry."); }
+    return stream;
   });
+  let stream;
+  try {
+    stream = await Promise.race([cameraRequest, new Promise((_, reject) => {
+      timer = setTimeout(() => { expired = true; reject(new Error("Still waiting for camera permission. Allow Camera in the browser’s site settings, then press Start / retry camera. If using the embedded preview, open this URL in Chrome or Edge.")); }, 20000);
+    })]);
+  } finally { clearTimeout(timer); }
 
   videoElement.srcObject = stream;
-  await videoElement.play();
+  try { await videoElement.play(); }
+  catch (error) { stream.getTracks().forEach(track => track.stop()); throw error; }
   return stream;
 }
 

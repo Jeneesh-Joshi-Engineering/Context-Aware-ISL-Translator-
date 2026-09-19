@@ -26,12 +26,17 @@ public class SessionSocketController {
     }
     @MessageMapping("/session/{sessionId}/keyword") public void keyword(@DestinationVariable String sessionId, MessageEnvelope<KeywordInputPayload> input) {
         requireRole(input.sender, "SIGNER"); String keyword = input.payload == null ? null : input.payload.keyword; if (keyword == null || keyword.isBlank()) throw new IllegalArgumentException("Keyword is required");
-        String clean = keyword.trim(); Instant received = Instant.now(); log.info("Keyword received: sessionId={}, at={}", sessionId, received);
-        List<String> history = sessions.history(sessionId) == null ? List.of() : sessions.history(sessionId).stream().map(m -> m.englishText).limit(8).toList();
+        if (sessions.get(sessionId) == null) return;
+        String clean = keyword.trim();
+        if (clean.equalsIgnoreCase("No_Gesture") || clean.equalsIgnoreCase("No Gesture")) return;
+        if (clean.length() > 200) throw new IllegalArgumentException("Gloss is too long");
+        Instant received = Instant.now(); log.info("Keyword received: sessionId={}, at={}", sessionId, received);
+        var messages = sessions.history(sessionId);
+        List<String> history = messages == null ? List.of() : messages.stream().skip(Math.max(0, messages.size() - 8)).map(m -> m.englishText).toList();
         gemini.generate(clean, history).exceptionally(error -> { log.warn("Gemini unavailable; using template fallback: {}", error.getMessage()); return fallback.sentenceFor(clean); }).thenAccept(sentence -> { publishTranslation(sessionId, new TranslatedMessagePayload("SIGNER", sentence, "")); log.info("Keyword broadcast: sessionId={}, receivedAt={}, emittedAt={}", sessionId, received, Instant.now()); });
     }
     public void broadcastStatus(String sessionId) { SessionStatusPayload status = sessions.status(sessionId); if (status != null) publish(sessionId, new MessageEnvelope<>("SESSION_STATUS", sessionId, "SYSTEM", status)); }
-    private void publishTranslation(String sessionId, TranslatedMessagePayload payload) { sessions.append(sessionId, payload); publish(sessionId, new MessageEnvelope<>("TRANSLATED_MESSAGE", sessionId, "SYSTEM", payload)); }
+    private void publishTranslation(String sessionId, TranslatedMessagePayload payload) { if (sessions.get(sessionId) == null) return; sessions.append(sessionId, payload); publish(sessionId, new MessageEnvelope<>("TRANSLATED_MESSAGE", sessionId, "SYSTEM", payload)); }
     private void publish(String sessionId, MessageEnvelope<?> message) { broker.convertAndSend("/topic/session/" + sessionId.toUpperCase(), message); }
     private String validRole(String role) { if (!"SIGNER".equals(role) && !"OFFICIAL".equals(role)) throw new IllegalArgumentException("sender must be SIGNER or OFFICIAL"); return role; }
     private void requireRole(String actual, String expected) { if (!expected.equals(actual)) throw new IllegalArgumentException("sender must be " + expected); }

@@ -1,7 +1,7 @@
 import {
   FilesetResolver,
   HandLandmarker,
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
+} from "../vendor/vision_bundle.mjs";
 import {
   FRAME_VECTOR_LENGTH,
   HAND_VECTOR_LENGTH,
@@ -37,8 +37,8 @@ export const HAND_COLORS = {
   Right: "#ff8fd3",
 };
 
-const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
-const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
+const MODEL_URL = new URL("../vendor/hand_landmarker.task", import.meta.url).href;
+const WASM_URL = new URL("../vendor/wasm", import.meta.url).href;
 
 export async function createHandLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(WASM_URL);
@@ -50,7 +50,7 @@ export async function createHandLandmarker() {
           modelAssetPath: MODEL_URL,
           delegate: "GPU",
         },
-        runningMode: "video",
+        runningMode: "VIDEO",
         numHands: 2,
       }),
       delegate: "GPU",
@@ -62,7 +62,7 @@ export async function createHandLandmarker() {
           modelAssetPath: MODEL_URL,
           delegate: "CPU",
         },
-        runningMode: "video",
+        runningMode: "VIDEO",
         numHands: 2,
       }),
       delegate: "CPU",

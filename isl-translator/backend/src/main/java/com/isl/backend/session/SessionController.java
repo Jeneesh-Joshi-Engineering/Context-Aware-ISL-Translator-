@@ -10,7 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 @CrossOrigin(origins = "*")
 public class SessionController {
     private final SessionService sessions;
-    public SessionController(SessionService sessions) { this.sessions = sessions; }
+    private final com.isl.backend.counter.CounterService counters;
+    public SessionController(SessionService sessions, com.isl.backend.counter.CounterService counters) { this.sessions = sessions; this.counters = counters; }
+    @PostMapping("/{sessionId}/end") public Map<String, String> end(@PathVariable String sessionId) { counters.endSession(sessionId); return Map.of("status", "ended"); }
     @PostMapping public Map<String, String> create() { return Map.of("sessionId", sessions.create().getSessionId()); }
     @GetMapping("/{sessionId}/history") public Map<String, Object> history(@PathVariable String sessionId) { try { var messages = sessions.history(sessionId); if (messages == null) throw notFound(); return Map.of("messages", messages); } catch (IllegalArgumentException ex) { throw notFound(); } }
     @GetMapping("/{sessionId}/status") public Object status(@PathVariable String sessionId) { try { var status = sessions.status(sessionId); if (status == null) throw notFound(); return status; } catch (IllegalArgumentException ex) { throw notFound(); } }

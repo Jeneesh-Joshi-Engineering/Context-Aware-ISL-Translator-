@@ -1,11 +1,79 @@
-const backend = `${location.protocol === "https:" ? "https" : "http"}://${location.hostname}:8080`;
-let chat, status, reconnectBanner, activeRole, activeSession, client, rendered = new Set();
-export function setupShared({ chatLog, statusStrip, reconnecting, role }) { chat = chatLog; status = statusStrip; reconnectBanner = reconnecting; activeRole = role; }
-export async function request(path, options) { const response = await fetch(`${backend}${path}`, options); if (!response.ok) throw new Error(response.status === 404 ? "That session code was not found." : "Could not contact the ISL Bridge server."); return response.json(); }
-export async function loadHistory(sessionId) { const data = await request(`/api/sessions/${sessionId}/history`); data.messages.forEach(renderMessage); }
-export function renderMessage(payload) { if (!payload?.englishText) return; const key = `${payload.originRole}|${payload.englishText}|${payload.hindiText || ""}`; if (rendered.has(key)) return; rendered.add(key); const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80; const signer = payload.originRole === "SIGNER"; const card = document.createElement("article"); card.className = `rounded-2xl border p-4 ${signer ? "border-blue-200 bg-blue-50/80" : "border-gray-200 bg-gray-50"}`; card.innerHTML = `<p class="mb-1 text-xs font-bold uppercase tracking-wide ${signer ? "text-blue-700" : "text-gray-600"}">${signer ? "Signer" : "Official"}</p><p class="font-medium text-gray-900"></p>${payload.hindiText ? '<p class="mt-2 text-sm text-gray-600"></p>' : ""}`; card.querySelector("p:nth-child(2)").textContent = payload.englishText; if (payload.hindiText) card.querySelector("p:nth-child(3)").textContent = payload.hindiText; chat.append(card); if (nearBottom) chat.scrollTop = chat.scrollHeight; }
-export function renderStatus(payload) { const otherConnected = activeRole === "SIGNER" ? payload.officialConnected : payload.signerConnected; const other = activeRole === "SIGNER" ? "Official" : "Signer"; status.textContent = `Session: ${activeSession} · ${otherConnected ? "● " + other + " connected" : other + " disconnected / waiting"}`; status.className = `mb-4 rounded-xl border px-4 py-3 text-sm font-medium ${otherConnected ? "border-blue-100 bg-white text-gray-600" : "border-amber-200 bg-amber-50 text-amber-800"}`; window.dispatchEvent(new CustomEvent("isl-status", { detail: payload })); }
-export async function connectSession(sessionId, role) { activeSession = sessionId.toUpperCase(); activeRole = role; await loadHistory(activeSession); client = new StompJs.Client({ webSocketFactory: () => new SockJS(`${backend}/ws`), reconnectDelay: 1000, reconnectTimeMode: "exponential", maxReconnectDelay: 8000 }); client.onConnect = () => { reconnectBanner?.classList.add("hidden"); client.subscribe(`/topic/session/${activeSession}`, message => { const envelope = JSON.parse(message.body); if (envelope.type === "TRANSLATED_MESSAGE") renderMessage(envelope.payload); if (envelope.type === "SESSION_STATUS") renderStatus(envelope.payload); }); client.publish({ destination: `/app/session/${activeSession}/join`, body: envelope("SESSION_STATUS", role, {}) }); loadHistory(activeSession).catch(console.warn); }; client.onWebSocketClose = () => reconnectBanner?.classList.remove("hidden"); client.onStompError = frame => console.warn("STOMP error", frame.headers.message); client.activate(); return { sendKeyword: (keyword, confidence) => send("keyword", "KEYWORD_INPUT", { keyword, confidence }), sendTranscript: text => send("transcript", "SPEECH_TRANSCRIPT", { text }), close: () => client?.deactivate() }; }
-function envelope(type, sender, payload) { return JSON.stringify({ type, sessionId: activeSession, sender, payload, timestamp: new Date().toISOString() }); }
-function send(route, type, payload) { if (client?.connected) client.publish({ destination: `/app/session/${activeSession}/${route}`, body: envelope(type, activeRole, payload) }); }
-export { backend };
+export const backend = window.ISL_BACKEND || (["5500", "5501"].includes(location.port)
+  ? `${location.protocol}//${location.hostname}:8080` : location.origin);
+let ui = {}, active;
+const emit = (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail }));
+export function setupShared(options) { ui = options; }
+export async function request(path, options = {}) {
+  let response;
+  try { response = await fetch(`${backend}${path}`, { ...options, signal: options.signal || AbortSignal.timeout(12000) }); }
+  catch { throw new Error(`Cannot reach the server at ${backend}. Start ISL Bridge and retry.`); }
+  if (!response.ok) {
+    const messages = {404: "That code was not found or the conversation has ended.", 409: "This counter is helping someone. Please wait."};
+    const error = new Error(messages[response.status] || `Server request failed (${response.status}). Please retry.`);
+    error.status = response.status; throw error;
+  }
+  return response.json();
+}
+export function showPanel(id) { document.querySelectorAll('[data-view]').forEach(el => { el.hidden = el.id !== id; }); }
+export function showError(id, error) { const el = document.getElementById(id); el.textContent = error?.message || String(error); el.hidden = false; }
+export function renderMessage(payload) {
+  if (!payload?.englishText || !ui.chatLog) return;
+  const card = document.createElement('article'); card.className = `message ${payload.originRole === 'SIGNER' ? 'signer' : 'official'}`;
+  const who = document.createElement('span'); who.className = 'message-role'; who.textContent = payload.originRole === 'SIGNER' ? 'Signer' : 'Official';
+  const text = document.createElement('p'); text.textContent = payload.englishText; card.append(who, text);
+  if (payload.hindiText) { const hindi = document.createElement('p'); hindi.textContent = payload.hindiText; card.append(hindi); }
+  ui.chatLog.append(card); ui.chatLog.scrollTop = ui.chatLog.scrollHeight;
+}
+export async function connectSession(id, role) {
+  await active?.close(); ui.chatLog?.replaceChildren();
+  let closed = false, count = 0, historyWork = Promise.resolve();
+  const sessionId = id.toUpperCase();
+  const client = new StompJs.Client({ webSocketFactory: () => new SockJS(`${backend}/ws`), reconnectDelay: 1500, heartbeatIncoming: 10000, heartbeatOutgoing: 10000 });
+  const envelope = (type, payload) => JSON.stringify({ type, sessionId, sender: role, payload, timestamp: new Date().toISOString() });
+  const state = connected => { if (closed) return; if (ui.reconnecting) ui.reconnecting.hidden = connected; emit('isl-connection', { connected, sessionId }); };
+  const finish = () => { if (!closed) { emit('isl-ended', { sessionId }); api.close(); } };
+  const history = () => {
+    historyWork = historyWork.catch(() => {}).then(async () => {
+      const data = await request(`/api/sessions/${sessionId}/history`);
+      if (closed) return;
+      data.messages.slice(count).forEach(message => { renderMessage(message); emit('isl-message', message); }); count = data.messages.length;
+    }).catch(error => { if (error.status === 404) finish(); else if (!closed) emit('isl-error', error); });
+    return historyWork;
+  };
+  client.onConnect = async () => {
+    if (closed) return;
+    client.subscribe(`/topic/session/${sessionId}`, message => {
+      if (closed) return;
+      const data = JSON.parse(message.body);
+      if (data.type === 'TRANSLATED_MESSAGE') history();
+      if (data.type === 'SESSION_ENDED') finish();
+      if (data.type === 'SESSION_STATUS') {
+        const other = role === 'SIGNER' ? data.payload.officialConnected : data.payload.signerConnected;
+        if (ui.statusStrip) ui.statusStrip.textContent = `Session ${sessionId} · ${other ? (role === 'SIGNER' ? 'Official' : 'Signer') + ' connected' : 'Waiting for the other device'}`;
+        emit('isl-status', data.payload);
+      }
+    });
+    try {
+      await request(`/api/sessions/${sessionId}/status`);
+      if (closed) return;
+      client.publish({ destination: `/app/session/${sessionId}/join`, body: envelope('SESSION_STATUS', {}) }); state(true); await history();
+    } catch (error) { if (error.status === 404) finish(); else emit('isl-error', error); }
+  };
+  client.onWebSocketClose = () => state(false);
+  client.onStompError = frame => { state(false); emit('isl-error', new Error(frame.headers.message || 'Conversation connection failed.')); };
+  function send(route, type, payload) {
+    if (closed || !client.connected) return false;
+    client.publish({ destination: `/app/session/${sessionId}/${route}`, body: envelope(type, payload) }); return true;
+  }
+  const api = { sessionId, get connected() { return !closed && client.connected; },
+    sendKeyword: (keyword, confidence) => send('keyword', 'KEYWORD_INPUT', { keyword, confidence }),
+    sendTranscript: text => send('transcript', 'SPEECH_TRANSCRIPT', { text }),
+    close: async () => { if (closed) return; closed = true; await client.deactivate(); },
+  };
+  active = api; state(false); client.activate(); return api;
+}
+export async function checkHealth() {
+  const health = await request('/api/health');
+  document.querySelectorAll('[data-server]').forEach(el => { el.textContent = health.translationMode === 'template-fallback' ? 'Server online · offline sentences' : 'Server online · Gemini enabled'; el.dataset.state = 'ready'; });
+  return health;
+}

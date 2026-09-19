@@ -2,9 +2,9 @@
 import { FIXED_SEQUENCE_LENGTH, FRAME_VECTOR_LENGTH } from "./normalize.js";
 import { logKpi } from "./kpiLogger.js";
 
-const MODEL_URL = "./model/model.json";
-const METADATA_URL = "./model/model_metadata.json";
-const LABEL_ENCODER_URL = "./model/label_encoder.json";
+const MODEL_URL = new URL("../model/model.json", import.meta.url).href;
+const METADATA_URL = new URL("../model/model_metadata.json", import.meta.url).href;
+const LABEL_ENCODER_URL = new URL("../model/label_encoder.json", import.meta.url).href;
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.7;
 const INFERENCE_EVERY_NTH_FRAME = 3;
 const REQUIRED_STABLE_PREDICTIONS = 2;
@@ -14,10 +14,14 @@ export async function createInference({
   onLowConfidence = () => {},
   onNoGesture = () => {},
   onLatency = () => {},
+  onScores = () => {},
+  onError = () => {},
 } = {}) {
-  // The deployed converter artifact is a TF.js graph model, not a LayersModel.
+  if (!globalThis.tf) throw new Error("TensorFlow.js is missing. Run npm run assets, then restart the server.");
+  await tf.ready();
+  // Layers format preserves the trained BiLSTM without SavedModel control-flow incompatibilities.
   const [model, encoder] = await Promise.all([
-    tf.loadGraphModel(MODEL_URL),
+    tf.loadLayersModel(MODEL_URL),
     loadEncoder(),
   ]);
 
@@ -25,7 +29,14 @@ export async function createInference({
   validateModelContract(model, encoder, labels);
   const confidenceThreshold = validThreshold(encoder.confidence_threshold);
 
-  console.info("ISL graph model loaded", { labels, confidenceThreshold });
+  // Compile GPU shaders before announcing readiness, so the first live sign does not stall.
+  const warmInput = tf.zeros([1, FIXED_SEQUENCE_LENGTH, FRAME_VECTOR_LENGTH]);
+  let warmOutput;
+  try { warmOutput = model.predict(warmInput); await singleOutputTensor(warmOutput).data(); }
+  catch (error) { model.dispose(); throw error; }
+  finally { warmInput.dispose(); disposeResult(warmOutput); }
+
+  console.info("ISL BiLSTM loaded", { labels, confidenceThreshold });
 
   const frames = [];
   const latencies = [];
@@ -34,9 +45,22 @@ export async function createInference({
   let candidateLabel = null;
   let candidateCount = 0;
   let lastEmittedLabel = null;
+  let disposed = false;
+  let disposePending = false;
 
   return {
+    labels,
+    confidenceThreshold,
+    predictSequence: classify,
+    reset() { frames.length = 0; resetCandidate(); lastEmittedLabel = null; },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      if (inferenceInFlight) disposePending = true;
+      else model.dispose();
+    },
     pushFrame(frame) {
+      if (disposed) return;
       if (!Array.isArray(frame) || frame.length !== FRAME_VECTOR_LENGTH) {
         console.warn("Ignoring an invalid landmark frame for inference.");
         return;
@@ -51,8 +75,10 @@ export async function createInference({
       ) return;
 
       inferenceInFlight = true;
-      classify([...frames])
+      return classify([...frames])
         .then(({ label, confidence, latencyMs }) => {
+          if (disposed) return;
+          onScores({ label, confidence, latencyMs });
           latencies.push(latencyMs);
           if (latencies.length > 20) latencies.shift();
           const averageLatency = latencies.reduce((sum, value) => sum + value, 0) / latencies.length;
@@ -94,10 +120,11 @@ export async function createInference({
         .catch((error) => {
           resetCandidate();
           console.error("ISL model inference failed:", error);
-          onLowConfidence(0);
+          onError(error);
         })
         .finally(() => {
           inferenceInFlight = false;
+          if (disposePending) { model.dispose(); disposePending = false; }
         });
     },
   };
@@ -108,17 +135,20 @@ export async function createInference({
   }
 
   async function classify(sequence) {
+    if (disposed) throw new Error("Model has been disposed");
+    if (sequence.length !== FIXED_SEQUENCE_LENGTH || sequence.some(frame => frame.length !== FRAME_VECTOR_LENGTH || frame.some(x => !Number.isFinite(x))))
+      throw new Error("Expected 30 frames of 126 finite landmark coordinates.");
     const start = performance.now();
     const input = tf.tensor([sequence], [1, FIXED_SEQUENCE_LENGTH, FRAME_VECTOR_LENGTH], "float32");
     let result;
 
     try {
-      // This converted graph resolves its Identity output through synchronous execution.
-      result = model.execute(input, "Identity");
+      result = model.predict(input);
       const output = singleOutputTensor(result);
       const scores = Array.from(await output.data());
+      if (scores.length !== labels.length || scores.some(score => !Number.isFinite(score))) throw new Error("Model output does not match the four-class vocabulary.");
       const index = argmax(scores);
-      return { label: labels[index], confidence: scores[index], latencyMs: performance.now() - start };
+      return { label: labels[index], confidence: scores[index], scores, latencyMs: performance.now() - start };
     } finally {
       input.dispose();
       disposeResult(result);

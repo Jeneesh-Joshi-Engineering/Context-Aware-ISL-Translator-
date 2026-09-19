@@ -1,67 +1,16 @@
-# ISL Bridge Frontend
+# Browser application
 
-This folder now contains two synchronized static apps for the session-broker backend:
+The Spring backend serves this directory. Start from the repository-root launcher and open `/official.html`. No frontend development server is required.
 
-- `index.html` — signer device: creates a session, shares its QR/code, then starts the camera and BiLSTM translation view after the official joins.
-- `official.html` — official device: scans or enters a session code, receives the same chat stream, and sends voice or typed responses.
+- `official.html`: permanent counter setup, printable QR, automatic visitor connection, speech/typed replies.
+- `index.html?counter=CTR-…`: signer automatic join, busy recovery, camera, live landmarks, BiLSTM and shared chat.
+- `diagnostics.html`: real recorded-input model-to-backend check and separate physical camera/tracking check.
+- `about.html`: supported prototype scope.
 
-Both pages use `js/shared.js` for STOMP-over-SockJS transport, session-history backfill, reconnect status, and the shared bilingual chat renderer. The backend is expected at port `8080` on the same host name as the static app.
+Run root `npm ci` then `npm run assets` to generate pinned local JavaScript, MediaPipe WASM/task assets and recorded diagnostic fixtures. Generated `vendor/` and `fixtures/` are not tracked. The trained `model/` files are tracked.
 
-## Run It
+Camera capture requires localhost or trusted HTTPS plus browser permission. Chrome/Edge are the intended demonstration browsers. An HTTP LAN-IP URL will not work for camera capture on a phone. The permanent counter QR uses the current page's origin, so deploy at the final HTTPS origin before printing for multiple devices.
 
-Serve the `frontend/` folder with any static server, for example:
+Landmarks are normalized into 126 coordinates per frame. Thirty frames feed a two-layer bidirectional LSTM. Only stable Help, Ticket or Train predictions reach the backend; No_Gesture is idle. The browser does not send camera video to the server. The official speech API may use the browser's speech service; typed replies remain available if speech recognition is unsupported.
 
-```bash
-npx serve .
-```
-
-Open `index.html` and `official.html` through the server URL, not `file://`. Some browsers block camera permissions, QR scanning, or ES module imports from local files. Start the Spring Boot backend first, then open the two pages (on separate devices if desired).
-
-## Record A Session
-
-1. Type any sign label you want to collect. The label is saved exactly as typed after trimming extra spaces.
-2. Adjust the recording duration if needed.
-3. Press `Start Recording` or hit `Space`.
-4. Hold the gesture until the countdown ends, or press `Space` again to stop early.
-5. Use `Discard Last Sequence` if you want to remove the most recent capture.
-
-## Export Format
-
-### JSON
-
-The JSON download is named `isl_dataset_<timestamp>.json` and uses this schema:
-
-```json
-{
-  "schema": "isl.data-acquisition.v1",
-  "exportedAt": "2026-08-01T00:00:00.000Z",
-  "sequenceCount": 1,
-  "targetFrameCount": 30,
-  "frameVectorLength": 126,
-  "sequences": [
-    {
-      "label": "Train_Ticket",
-      "timestamp": "2026-08-01T00:00:00.000Z",
-      "handedness": ["Right"],
-      "frames": 30 arrays of 126 numeric values
-    }
-  ]
-}
-```
-
-Each `frames` entry is exactly 30 arrays long, and each frame contains 126 numeric values.
-
-### CSV
-
-The CSV export is flattened for pandas-style loading. Each row represents one frame and includes:
-
-- `sequence_id`
-- `label`
-- `frame_index`
-- `hand1_x0` through `hand2_z20`
-- `handedness1`
-- `handedness2`
-
-## Privacy
-
-Raw video frames are never exported. Only numeric landmark vectors and metadata are stored or downloaded.
+Use the three separate indicators to diagnose problems: Camera (capture), Recognition (tracker/model), Connection (backend/session). Errors offer explicit retry controls. A model-ready badge alone does not mean camera permission has been granted.

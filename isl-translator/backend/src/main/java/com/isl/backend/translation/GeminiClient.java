@@ -18,7 +18,7 @@ public class GeminiClient {
     }
     public CompletableFuture<String> generate(String keyword, List<String> history) {
         if (key == null || key.isBlank()) return CompletableFuture.failedFuture(new IllegalStateException("Gemini is not configured"));
-        return client.post().uri(endpoint + "/" + model + ":generateContent?key={key}", key).bodyValue(prompts.sessionBody(keyword, history)).retrieve().bodyToMono(JsonNode.class).timeout(timeout).map(this::text).toFuture();
+        return client.post().uri(endpoint + "/" + model + ":generateContent").header("x-goog-api-key", key).bodyValue(prompts.sessionBody(keyword, history)).retrieve().bodyToMono(JsonNode.class).timeout(timeout).map(this::text).toFuture();
     }
     private String text(JsonNode response) { String value = response.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText("").trim().replaceAll("\\s+", " "); if (value.isBlank() || value.length() > 500) throw new IllegalStateException("Invalid Gemini response"); return value; }
 }

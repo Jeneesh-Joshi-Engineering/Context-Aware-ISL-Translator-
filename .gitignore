@@ -39,3 +39,9 @@ target/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Local runtime state and generated browser dependencies (rebuild with npm run assets).
+.cache/
+isl-translator/backend/data/
+isl-translator/frontend/vendor/
+isl-translator/frontend/fixtures/

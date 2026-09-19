@@ -1,39 +1,34 @@
-# ISL Contextual Generation Backend
+# Backend
 
-This standalone Spring Boot service turns ISL keyword messages into polite contextual sentences through Gemini and delivers all messages over a raw WebSocket endpoint.
+Use the repository-root `Start-ISLBridge.ps1` launcher. JDK 25 and Maven 3.9+ are required. Spring serves the frontend, model, REST and SockJS/STOMP from one origin. Run `npm ci` and `npm run assets` at the root before building.
 
-## Run
+## Package and run
 
-Use Java 17 or later and Maven. Set a Gemini API key, then start the service:
-
-```powershell
-$env:GEMINI_API_KEY = "your-key"
-cd backend
-mvn spring-boot:run
-```
-
-The service fails at startup with a clear error if `GEMINI_API_KEY` is not supplied. Optional configuration environment variables are `SERVER_PORT` (default `8080`), `GEMINI_TIMEOUT_MS` (default `5000`), `GEMINI_MODEL`, and `GEMINI_ENDPOINT`.
-
-## WebSocket contract
-
-Connect to `ws://localhost:8080/ws/conversation?sessionId=abc123&role=deaf_user`. Valid roles are `deaf_user`, `official`, and read-only `observer`. Clients only receive messages belonging to their own `sessionId`.
-
-Send a keyword message such as:
-
-```json
-{"type":"KEYWORD_DETECTED","sessionId":"abc123","role":"deaf_user","keyword":"Help","timestamp":"2026-08-04T10:15:30Z"}
-```
-
-`keywords` may be supplied as an array instead of `keyword`. `OFFICIAL_RESPONSE` messages from an `official` are relayed unchanged to the other clients in that session.
-
-## Manual test page
-
-With the backend running, open `test-client/test-client.html` in a browser. It connects as `deaf_user` in session `test1`, lets you submit a keyword, and prints every response. Open a second WebSocket client as `official` or `observer` with the same session ID to see broadcasts.
-
-## Tests
+From this directory:
 
 ```powershell
-mvn test
+mvn verify
+java -jar target/isl-contextual-backend-0.0.1-SNAPSHOT.jar
 ```
 
-Tests mock Gemini-related behavior and make no external API requests.
+Default port: 8080; override with `SERVER_PORT`. Open `/official.html`, `/index.html` or `/diagnostics.html`. A packaged JAR includes the prepared browser dependencies. Rebuild after frontend changes; during Maven development, `mvn resources:resources` refreshes static files.
+
+## HTTP contract
+
+| Method and path | Purpose |
+| --- | --- |
+| GET /api/health | Server health, configured sentence mode, vocabulary |
+| POST /api/counters | Create permanent counter; optional JSON `{"label":"Window 3"}` |
+| GET /api/counters/{id} | Counter details and currentSessionId |
+| POST /api/counters/{id}/sessions | Create active conversation; 409 if busy |
+| POST /api/counters/{id}/sessions/{sessionId}/end | End matching conversation |
+| POST /api/sessions | Create manual conversation |
+| GET /api/sessions/{id}/status | Participant presence |
+| GET /api/sessions/{id}/history | Ordered translated messages |
+| POST /api/sessions/{id}/end | End manual or counter conversation |
+
+Unknown resources return 404. Connect STOMP using SockJS `/ws`; subscribe to `/topic/session/{id}` and, for the official counter listener, `/topic/counter/{id}`. Client destinations are `/app/session/{id}/join`, `/keyword` and `/transcript`. See `frontend/js/shared.js` for exact message envelopes and `scripts/integration.mjs` for an executable client.
+
+Counters persist to `data/counters.json` relative to the process working directory; override Spring `counter.store` to change it. Sessions and chat history are transient. This faculty prototype has no user authentication; counter/session codes are routing identifiers, not production access controls.
+
+Set `GEMINI_API_KEY` before startup for optional remote sentence generation. Default model is configured in `application.properties`; a missing key, timeout or provider failure uses the local template fallback. Health reports configuration, not proof that the provider accepted a request. Keys stay server-side.
