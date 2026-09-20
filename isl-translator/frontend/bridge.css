@@ -5,3 +5,12 @@
 @media(max-width:760px){.nav-inner{padding:12px 16px}.app{padding:22px 16px}.workspace,.ready-layout{grid-template-columns:1fr}.card{padding:20px}.nav-links{gap:12px}.nav-links .desktop-only{display:none}.chat-card{min-height:360px}.narrow{margin:10px auto}.row.mobile-stack{flex-direction:column;align-items:stretch}.pipeline{gap:5px}.pipeline div{padding:8px}.brand{font-size:17px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{body{background:white}.nav,.no-print,.footer{display:none!important}.app{padding:0}.ready-layout{display:block}.ready-copy{display:none}.signage{border:3px solid #111;max-width:500px;margin:30px auto}.card{box-shadow:none;border:0}.signage .qr{border:0}}
+
+/* Shared bilingual messages and accessible speech controls. */
+:root{--muted:#53647a}.footer{color:#5c6b80}.chat-log:empty:before{color:#5c6b80}
+.skip-link{position:fixed;left:12px;top:-80px;background:white;padding:12px;z-index:100;border:2px solid var(--blue);border-radius:8px}.skip-link:focus{top:12px}
+select:focus-visible,summary:focus-visible{outline:3px solid #245ce0;outline-offset:3px}
+.speech-options{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}.speech-options label{margin:0}.speech-options select{width:auto;max-width:100%}
+.mic{width:auto;min-width:100px;min-height:48px;height:auto;flex-shrink:0;border-radius:12px;padding:12px;font-size:17px;display:flex;align-items:center;justify-content:center;gap:8px}
+.translation-line .language-label{display:block;font-size:11px;font-weight:700;color:#53647a;margin:5px 0 2px}.message p[lang=hi]{font-size:18px;line-height:1.7}.translation-note{font-size:12px;color:#53647a;margin-top:10px}.translation-note.warning{color:#79500b;background:#fff8e7;padding:8px;border-radius:8px}
+@media(max-width:480px){.nav-inner{flex-wrap:wrap}.nav-links{flex-wrap:wrap;gap:14px}.reply-box form{display:grid;grid-template-columns:auto 1fr}.reply-box input{grid-column:1/-1;grid-row:1}.reply-box .primary{justify-self:end}.speech-options{display:block}.speech-options select{width:100%;margin-top:8px}.pipeline{grid-template-columns:1fr}.card{border-radius:16px}.qr{padding:8px}}

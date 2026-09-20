@@ -39,7 +39,10 @@ $('runCheck').onclick = async () => {
       const before = $('chatLog').children.length;
       if (!ws.sendKeyword(result.label, result.confidence)) throw new Error('WebSocket disconnected before gloss delivery');
       await waitFor(() => $('chatLog').children.length > before, `${result.label} sentence`);
-      log(`  → ${$('chatLog').lastElementChild.querySelector('p').textContent}`);
+      const card = $('chatLog').lastElementChild;
+      const en = card.querySelector('[lang=en]'), hi = card.querySelector('[lang=hi]');
+      if (!en || !hi) throw new Error(`Missing bilingual output for ${result.label}`);
+      log(`  → ${en.textContent}\n  → ${hi.textContent}`);
     }
     log('PASS: actual model output → WebSocket → sentence generation → browser chat.');
     $('checkResult').textContent = 'Pipeline passed. Open the receiving official screen to see the same conversation.'; $('checkResult').hidden = false;

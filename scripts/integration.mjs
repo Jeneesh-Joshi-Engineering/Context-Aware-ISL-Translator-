@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { Client } from '@stomp/stompjs';
 import { loadBrowserInference, recordedSamples } from './model-runtime.mjs';
+import { createSpeechController } from '../isl-translator/frontend/js/speech.js';
 const base = process.env.ISL_BACKEND || 'http://localhost:8080';
 async function api(path, method='GET', body) {
   const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json'},body:body&&JSON.stringify(body)});
   assert.ok(response.ok,`${method} ${path}: ${response.status}`); return response.json();
 }
 async function until(condition, message) {
-  const end=Date.now()+15000;
+  const end=Date.now()+45000;
   while(Date.now()<end) {if(condition()) return; await new Promise(r=>setTimeout(r,25));}
   throw new Error('Timed out: '+message);
 }
@@ -42,13 +43,33 @@ try {
     await until(()=>b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length>before,'predicted gloss returned as sentence');
     const message=b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').at(-1);
     assert.equal(message.payload.originRole,'SIGNER'); assert.ok(message.payload.englishText.length>5);
+    assert.match(message.payload.hindiText, /[\u0900-\u097f]/);
     if(health.translationMode==='template-fallback') assert.equal(message.payload.englishText,sentences[label]);
     await until(()=>a.messages.some(m=>m.type==='TRANSLATED_MESSAGE'&&m.payload.englishText===message.payload.englishText),'official receives sentence');
     console.log(`${prediction.label} (${(prediction.confidence*100).toFixed(2)}%) -> ${message.payload.englishText}`);
   }
-  for(let i=0;i<2;i++) a.send(id,'OFFICIAL','transcript','SPEECH_TRANSCRIPT',{text:'Please go to platform three.'});
+  // Exercise the production speech accumulator with simulated recognition events.
+  // This checks transport/lifecycle, not a physical microphone or speech provider.
+  let draft='', recognizer, restart;
+  class RecordedSpeechEvents {
+    constructor(){recognizer=this;} start(){this.onstart();} stop(){this.onend();} abort(){}
+    final(text){this.onresult({results:[Object.assign([{transcript:text}],{isFinal:true})]});}
+  }
+  const speech=createSpeechController({Recognition:RecordedSpeechEvents,getDraft:()=>'',onDraft:text=>draft=text,onState:()=>{},schedule:fn=>{restart=fn;return 1;},cancel:()=>{}});
+  speech.start('en-IN');recognizer.final('Please go');recognizer.onend();restart();recognizer.final('to platform three.');speech.stop();
+  assert.equal(draft,'Please go to platform three.');
+  for(let i=0;i<2;i++) a.send(id,'OFFICIAL','transcript','SPEECH_TRANSCRIPT',{text:draft,language:'en-IN'});
   await until(()=>b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE'&&m.payload.originRole==='OFFICIAL').length===2,'identical official replies');
-  assert.equal((await api(`/api/sessions/${id}/history`)).messages.length,5);
+  for(const m of b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE'&&m.payload.originRole==='OFFICIAL')) {
+    assert.match(m.payload.hindiText,/[\u0900-\u097f]/); assert.ok(m.payload.englishText);
+  }
+  a.send(id,'OFFICIAL','transcript','SPEECH_TRANSCRIPT',{text:'कृपया यहाँ प्रतीक्षा करें।',language:'hi-IN'});
+  await until(()=>b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE'&&m.payload.originRole==='OFFICIAL').length===3,'Hindi reply translated');
+  const translated=b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').at(-1).payload;
+  assert.ok(translated.englishText);assert.match(translated.hindiText,/[\u0900-\u097f]/);
+  await until(()=>a.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length===6,'both devices received all bilingual messages');
+  assert.deepEqual(a.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').map(m=>m.payload),b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').map(m=>m.payload));
+  assert.equal((await api(`/api/sessions/${id}/history`)).messages.length,6);
   await api(`/api/sessions/${id}/end`,'POST');
   await until(()=>b.messages.some(m=>m.type==='SESSION_ENDED'),'signer end notification');
   assert.equal((await api(`/api/counters/${counter.counterId}`)).currentSessionId,null);

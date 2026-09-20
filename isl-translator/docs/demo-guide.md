@@ -11,7 +11,7 @@ Create one counter, for example Railway Enquiry — Window 3. Its permanent QR s
 1. Open `/diagnostics.html`, run the model-to-backend check, and confirm PASS for Help, Ticket and Train. This uses actual recorded landmarks and deployed model weights. Explain that this verifies integration rather than live recognition accuracy.
 2. Click **Check live camera + tracking**, approve camera access and hold a hand in view. Confirm both the camera-open and 126-coordinate messages. Stop the diagnostic camera before starting the signer screen.
 3. Open the counter's signer link. Verify Camera, Recognition and Connection independently. Position hands fully in view with good lighting. Perform the trained gesture, then return to idle before repeating it.
-4. Show the official receiving the sentence. Type a reply and show it on the signer screen. Speech input is optional and browser-dependent.
+4. Show the official receiving the sentence. Type a reply and show it on the signer screen. For speech choose English/Hindi, press Listen, pause naturally while speaking, Stop, review the complete draft and Send. Verify both language lines. Browser speech recognition may need internet.
 5. Open another signer tab to show Busy. End the active conversation and show the next visitor being admitted automatically with the same QR.
 
 ## Explain the pipeline
@@ -37,3 +37,5 @@ The model recognizes Help, Ticket, Train and an idle No_Gesture class. It does n
 | Gemini fails | Local sentences remain available; verify the server environment/key/provider separately. |
 
 Counter codes persist locally, but chat history and active sessions reset after backend restart. Keep the backend working directory consistent. End the conversation and stop the server with Ctrl+C after the showcase.
+
+Use the [transcription guide](transcription-and-bilingual.md) for Gemini `.env` setup and the supported offline bilingual phrasebook. Present the [path-to-market list](path-to-market.md) as the remaining production work.

@@ -11,6 +11,14 @@ public class Session {
     private volatile boolean signerConnected;
     private volatile boolean officialConnected;
     private volatile Instant lastActivity = Instant.now();
+    private java.util.concurrent.CompletableFuture<Void> translationTail = java.util.concurrent.CompletableFuture.completedFuture(null);
+    private int pendingTranslations;
+    public synchronized void enqueueTranslation(java.util.function.Supplier<java.util.concurrent.CompletableFuture<Void>> work) {
+        if (pendingTranslations >= 20) throw new IllegalStateException("Please wait for the current translations to finish");
+        pendingTranslations++;
+        translationTail = translationTail.handle((result, error) -> null).thenCompose(ignored -> work.get())
+            .whenComplete((result, error) -> { synchronized (this) { pendingTranslations--; } });
+    }
     public Session(String sessionId) { this.sessionId = sessionId; }
     public String getSessionId() { return sessionId; }
     public List<TranslatedMessagePayload> getMessages() { return List.copyOf(messages); }

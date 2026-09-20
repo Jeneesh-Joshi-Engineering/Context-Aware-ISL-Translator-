@@ -21,7 +21,7 @@ No Live Server, Python server, separate ML server, or separate frontend server i
 1. On the official screen, create a counter with a label. Keep its permanent `CTR-…` code and QR sign.
 2. Click **Open signer device** for a same-computer demonstration. The official screen opens the conversation automatically. Allow camera access on the signer screen.
 3. Keep both hands within view and perform the trained **Help**, **Ticket**, or **Train** gesture. The model uses 30 landmark frames, requires stable confidence, and sends each held sign once. Return to idle before repeating the same sign.
-4. Watch the Camera, Recognition and Connection indicators separately. Both screens receive the same English message. The official can type a reply; microphone input depends on browser speech-recognition support.
+4. Watch the Camera, Recognition and Connection indicators separately. Both screens receive the same English message. The official can type a reply or select English/Hindi, press Listen, speak, Stop, review and Send. Both screens show English and Hindi. Browser speech recognition may need internet.
 5. End the conversation. The official screen returns to Ready; the same counter QR can serve the next visitor. A second visitor sees Busy until the counter is free.
 
 For two physical devices, use a trusted **HTTPS deployment** accessible to both. `localhost` refers to the device opening it; a phone cannot use the laptop's localhost QR. Plain HTTP over a LAN IP does not provide the secure context required for camera capture. Keep the same public origin when printing a permanent QR.
@@ -52,10 +52,14 @@ npm run test:integration
 
 ## Sentence engine and model limits
 
-Without `GEMINI_API_KEY`, the app explicitly shows **offline sentences** and uses deterministic templates. To enable Gemini, set that environment variable in the terminal before starting the server; optional settings are `GEMINI_MODEL` and `GEMINI_TIMEOUT_MS`. A `.env` file is not automatically loaded. Never place a key in frontend code or commit it. Provider failures fall back to templates.
+Without `GEMINI_API_KEY`, the app explicitly shows **offline sentences** and uses deterministic templates. To enable Gemini, set that environment variable in the terminal before starting the server; optional settings are `GEMINI_MODEL` and `GEMINI_TIMEOUT_MS`. Alternatively copy `.env.example` to `.env` at the repository root and set the key there; startup reads this local file. Never place a key in frontend code or commit it. Provider failures fall back to templates.
 
 The provided model has four classes: Help, No_Gesture, Ticket and Train. It does not recognize arbitrary ISL syntax, fingerspelling, or every sign. The recorded-input checks validate deployment and integration, not independent model accuracy. See [model provenance](isl-translator/frontend/model/README.md).
 
 Counter identifiers persist in `isl-translator/backend/data/counters.json` when using the launcher. Conversation history is in memory and resets when the server restarts. Runtime data, installed dependencies and generated browser assets are intentionally excluded from Git; source code, the lockfile, trained browser weights and asset preparation scripts are tracked.
 
 See the [faculty demo guide](isl-translator/docs/demo-guide.md) for troubleshooting and the [backend guide](isl-translator/backend/README.md) for endpoints and packaging.
+
+## Faculty finishing pass
+
+See [speech and bilingual setup/verification](isl-translator/docs/transcription-and-bilingual.md) and the [path-to-market punch list](isl-translator/docs/path-to-market.md). Arbitrary bilingual replies require a working Gemini configuration. The offline phrasebook supports the listed counter phrases; unsupported messages preserve the source and explicitly show translation unavailable.

@@ -36,7 +36,7 @@ export async function createInference({
   catch (error) { model.dispose(); throw error; }
   finally { warmInput.dispose(); disposeResult(warmOutput); }
 
-  console.info("ISL BiLSTM loaded", { labels, confidenceThreshold });
+
 
   const frames = [];
   const latencies = [];
@@ -83,10 +83,6 @@ export async function createInference({
           if (latencies.length > 20) latencies.shift();
           const averageLatency = latencies.reduce((sum, value) => sum + value, 0) / latencies.length;
           onLatency(averageLatency);
-
-          if (averageLatency > 50 && latencies.length === 20) {
-            console.warn("Inference latency exceeds 50ms target:", averageLatency);
-          }
 
           if (confidence < confidenceThreshold) {
             resetCandidate();

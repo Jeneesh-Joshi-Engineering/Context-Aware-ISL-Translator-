@@ -17,11 +17,22 @@ export async function request(path, options = {}) {
 export function showPanel(id) { document.querySelectorAll('[data-view]').forEach(el => { el.hidden = el.id !== id; }); }
 export function showError(id, error) { const el = document.getElementById(id); el.textContent = error?.message || String(error); el.hidden = false; }
 export function renderMessage(payload) {
-  if (!payload?.englishText || !ui.chatLog) return;
+  if ((!payload?.englishText && !payload?.hindiText) || !ui.chatLog) return;
   const card = document.createElement('article'); card.className = `message ${payload.originRole === 'SIGNER' ? 'signer' : 'official'}`;
   const who = document.createElement('span'); who.className = 'message-role'; who.textContent = payload.originRole === 'SIGNER' ? 'Signer' : 'Official';
-  const text = document.createElement('p'); text.textContent = payload.englishText; card.append(who, text);
-  if (payload.hindiText) { const hindi = document.createElement('p'); hindi.textContent = payload.hindiText; card.append(hindi); }
+  card.append(who);
+  for (const [language, label, value] of [['en', 'English', payload.englishText], ['hi', 'हिन्दी', payload.hindiText]]) {
+    if (!value) continue;
+    const text = document.createElement('p'); text.lang = language; text.className = 'translation-line';
+    const heading = document.createElement('span'); heading.className = 'language-label'; heading.textContent = label;
+    text.append(heading, document.createTextNode(value)); card.append(text);
+  }
+  if (payload.translationMode === 'unavailable' || !payload.englishText || !payload.hindiText) {
+    const note = document.createElement('div'); note.className = 'translation-note warning';
+    note.textContent = 'Translation unavailable · original message shown. अनुवाद उपलब्ध नहीं है।'; card.append(note);
+  } else if (payload.translationMode === 'offline-phrase') {
+    const note = document.createElement('div'); note.className = 'translation-note'; note.textContent = 'Offline phrase translation'; card.append(note);
+  }
   ui.chatLog.append(card); ui.chatLog.scrollTop = ui.chatLog.scrollHeight;
 }
 export async function connectSession(id, role) {
@@ -67,13 +78,13 @@ export async function connectSession(id, role) {
   }
   const api = { sessionId, get connected() { return !closed && client.connected; },
     sendKeyword: (keyword, confidence) => send('keyword', 'KEYWORD_INPUT', { keyword, confidence }),
-    sendTranscript: text => send('transcript', 'SPEECH_TRANSCRIPT', { text }),
+    sendTranscript: (text, language = 'en-IN') => send('transcript', 'SPEECH_TRANSCRIPT', { text, language }),
     close: async () => { if (closed) return; closed = true; await client.deactivate(); },
   };
   active = api; state(false); client.activate(); return api;
 }
 export async function checkHealth() {
   const health = await request('/api/health');
-  document.querySelectorAll('[data-server]').forEach(el => { el.textContent = health.translationMode === 'template-fallback' ? 'Server online · offline sentences' : 'Server online · Gemini enabled'; el.dataset.state = 'ready'; });
+  document.querySelectorAll('[data-server]').forEach(el => { el.textContent = health.translationMode === 'template-fallback' ? 'Online · offline phrase translations' : 'Online · bilingual translation configured'; el.dataset.state = 'ready'; });
   return health;
 }

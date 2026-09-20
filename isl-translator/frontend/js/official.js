@@ -1,13 +1,28 @@
 import { setupShared, request, connectSession, showPanel, showError, checkHealth, backend } from './shared.js';
+import { createSpeechController } from './speech.js';
 const $ = id => document.getElementById(id);
-let counter, counterClient, ws, sessionId, recognition, syncing = false, counterVersion = 0;
+let counter, counterClient, ws, sessionId, syncing = false, counterVersion = 0;
+const recognition = createSpeechController({
+  Recognition: window.SpeechRecognition || window.webkitSpeechRecognition,
+  getDraft: () => $('textInput').value,
+  onDraft: text => { $('textInput').value = text; },
+  onState: (state, message) => {
+    const active = state !== 'idle';
+    $('micButton').classList.toggle('listening', active);
+    $('micButton').setAttribute('aria-pressed', String(active));
+    $('micButton').setAttribute('aria-label', active ? 'Stop voice response' : 'Start voice response');
+    $('micLabel').textContent = active ? 'Stop' : 'Listen';
+    $('speechLanguage').disabled = active; $('sendText').disabled = active; $('textInput').readOnly = active;
+    $('micState').textContent = message;
+  }
+});
 setupShared({ chatLog: $('chatLog'), statusStrip: $('statusStrip'), reconnecting: $('reconnecting'), role: 'OFFICIAL' });
 const error = e => showError('appError', e);
 function badge(text, ready = false) { $('officialState').textContent = text; $('officialState').dataset.state = ready ? 'ready' : ''; }
 async function openSession(id) {
   if (sessionId === id) return;
   recognition?.abort(); sessionId = id; $('textInput').value = ''; $('appError').hidden = true;
-  $('micState').textContent = 'Tap the microphone to speak, or type your reply.';
+  $('micState').textContent = 'Choose your language. Listen, stop, review, then send.';
   showPanel('conversation'); badge('Conversation live', true);
   $('conversation').classList.remove('attention'); void $('conversation').offsetWidth; $('conversation').classList.add('attention');
   ws = await connectSession(id, 'OFFICIAL');
@@ -34,6 +49,7 @@ async function syncCounter() {
 }
 async function activateCounter(value) {
   counterVersion++; await counterClient?.deactivate(); counter = value;
+  const page = new URL(location.href); page.searchParams.delete('session'); history.replaceState(null, '', page);
   localStorage.setItem('isl.counterId', counter.counterId);
   $('counterNav').textContent = counter.label || counter.counterId; $('counterTitle').textContent = counter.label || 'Service counter'; $('counterCode').textContent = counter.counterId;
   const url = new URL(`index.html?counter=${counter.counterId}`, location.href).href;
@@ -58,6 +74,7 @@ async function joinManual() {
   const id = $('sessionInput').value.trim().toUpperCase();
   if (!/^[A-Z0-9]{6}$/.test(id)) throw new Error('Enter the six-character session code.');
   await request(`/api/sessions/${id}/status`); counterVersion++; await counterClient?.deactivate(); counterClient = null; counter = null; await openSession(id);
+  const page = new URL(location.href); page.searchParams.set('session', id); history.replaceState(null, '', page);
 }
 $('joinForm').onsubmit = e => { e.preventDefault(); formAction(e.currentTarget, joinManual); };
 $('setupButton').onclick = () => { if (sessionId) return error('End the conversation before changing counters.'); showPanel('setup'); badge('Setup'); };
@@ -71,24 +88,17 @@ $('endSession').onclick = async () => {
 };
 function sendText(text) {
   const value = text.trim(); if (!value) return;
-  if (!ws?.sendTranscript(value)) return error('Still reconnecting. Your reply is kept here; press Send when connected.');
-  $('textInput').value = ''; $('micState').textContent = 'Reply sent.';
+  if (value.length > 1000) return error('Please keep each reply within 1,000 characters. Your draft is preserved.');
+  if (recognition.active) return;
+  if (!ws?.sendTranscript(value, $('speechLanguage').value)) return error('Still reconnecting. Your reply is kept here; press Send when connected.');
+  $('textInput').value = ''; $('micState').textContent = 'Reply submitted. Preparing both languages…';
 }
 $('replyForm').onsubmit = e => { e.preventDefault(); sendText($('textInput').value); };
 $('micButton').onclick = () => {
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) { $('micState').textContent = 'Voice input is unavailable in this browser. Type your reply or open Chrome/Edge.'; return; }
-  if (recognition) { recognition.stop(); return; }
-  const speakingSession = sessionId; recognition = new Recognition(); recognition.lang = 'en-IN'; recognition.interimResults = true;
-  recognition.onstart = () => { $('micButton').classList.add('listening'); $('micState').textContent = 'Listening… tap the microphone to stop.'; };
-  recognition.onresult = e => {
-    const result = e.results[e.resultIndex]; $('textInput').value = result[0].transcript;
-    if (result.isFinal && speakingSession === sessionId) sendText(result[0].transcript);
-  };
-  recognition.onerror = e => { $('micState').textContent = `Voice input: ${e.error}. You can type your reply.`; };
-  recognition.onend = () => { recognition = null; $('micButton').classList.remove('listening'); };
-  try { recognition.start(); } catch (e) { recognition = null; error(e); }
+  if (recognition.active) recognition.stop();
+  else if (sessionId) recognition.start($('speechLanguage').value);
 };
+window.addEventListener('isl-message', e => { if (e.detail.originRole === 'OFFICIAL') $('micState').textContent = 'Reply received in the shared conversation.'; });
 window.addEventListener('isl-ended', e => { if (e.detail.sessionId === sessionId) ready(); });
 window.addEventListener('isl-error', e => error(e.detail));
 window.addEventListener('pagehide', () => { recognition?.abort(); ws?.close(); counterClient?.deactivate(); });
