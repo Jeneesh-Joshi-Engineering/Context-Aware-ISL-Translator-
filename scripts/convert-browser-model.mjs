@@ -6,6 +6,10 @@ import { createHash } from 'node:crypto';
 
 const source = new URL('../isl-translator/model-training/saved_model/transit_v2/tfjs_model/model.json', import.meta.url);
 const output = new URL('../isl-translator/frontend/model/', import.meta.url);
+const deployed = JSON.parse(await readFile(new URL('model_metadata.json', output), 'utf8'));
+if (deployed.version && !process.argv.includes('--restore-original')) {
+  throw new Error('An expanded trained model is deployed. Use export-expanded-model.mjs, or explicitly --restore-original to replace it with the legacy model.');
+}
 const graph = JSON.parse(await readFile(source, 'utf8'));
 const bytes = Buffer.concat(await Promise.all(graph.weightsManifest.flatMap(g => g.paths).map(p => readFile(new URL(p, source)))));
 const decoded = tf.io.decodeWeights(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), graph.weightsManifest.flatMap(g => g.weights));

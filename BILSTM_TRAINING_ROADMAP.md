@@ -227,7 +227,7 @@ saved_model/v1/
 - [ ] **Full training:** Train on complete dataset
 - [ ] **Accuracy benchmark:** Test accuracy ≥ 85% on test set
 - [ ] **Inference speed:** ≤50ms per prediction in browser
-- [ ] **Confidence calibration:** Threshold at 0.70 works well for your data
+- [ ] **Confidence calibration:** Current operating threshold is 0.60; calibrate it on new participant-held-out data
 
 **Run inference on sample:**
 ```python
@@ -317,7 +317,7 @@ If any sequence has all zeros or mismatched shape, `load_and_merge.py` will skip
 | Training Time | <1 hour | 30–45 min |
 | Model Size | <10MB | 2–5MB |
 | Inference Speed | <50ms | 20–40ms |
-| Confidence Threshold | 0.70 | 0.65–0.75 |
+| Confidence Threshold | 0.60 | Validate 0.55–0.70 on new data |
 
 ---
 
@@ -342,7 +342,7 @@ If any sequence has all zeros or mismatched shape, `load_and_merge.py` will skip
 - Reduce rolling window size (30 → 20 frames)
 - Run in WebWorker (background thread)
 
-### Issue: "Confidence always <0.70"
+### Issue: "Confidence always <0.60"
 **Cause:** Model is uncertain; threshold too high for your data quality.
 **Fix:**
 - Lower threshold to 0.50–0.60

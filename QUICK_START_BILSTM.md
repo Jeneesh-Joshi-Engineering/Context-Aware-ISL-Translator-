@@ -199,7 +199,7 @@ Update `frontend/js/main.js` to load the model:
 
 ```javascript
 let tfModel = null;
-const CONFIDENCE_THRESHOLD = 0.70;
+const CONFIDENCE_THRESHOLD = 0.60;
 const ROLLING_WINDOW_SIZE = 30;
 let landmarkWindow = [];
 

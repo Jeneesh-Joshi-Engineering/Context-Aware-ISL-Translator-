@@ -13,6 +13,6 @@ def main():
  X,y=np.load(data/"X_test.npy"),np.load(data/"y_test.npy"); enc=json.loads((data/"label_encoder.json").read_text(encoding="utf-8")); labels=enc.get("classes") or list(enc)
  probs=tf.keras.models.load_model(out/"model.h5").predict(X,verbose=0); pred=probs.argmax(axis=1); report=classification_report(y,pred,target_names=labels,zero_division=0,output_dict=True)
  cm=confusion_matrix(y,pred,labels=range(len(labels))); fig,ax=plt.subplots(figsize=(8,6)); ax.imshow(cm,cmap="Blues"); ax.set_xticks(range(len(labels)),labels,rotation=45,ha="right"); ax.set_yticks(range(len(labels)),labels); [ax.text(j,i,str(v),ha="center",va="center") for i,row in enumerate(cm) for j,v in enumerate(row)]; fig.tight_layout(); fig.savefig(out/"confusion_matrix.png",dpi=150)
- fallback=float((probs.max(axis=1)<.7).mean()); lines=["# Evaluation Report","",f"- Test accuracy: {float((pred==y).mean()):.4f}",f"- Fallback-trigger rate (<70% confidence): {fallback:.2%}","","## Per-class metrics","","| Label | Precision | Recall | F1 |","|---|---:|---:|---:|"]
+ fallback=float((probs.max(axis=1)<.6).mean()); lines=["# Evaluation Report","",f"- Test accuracy: {float((pred==y).mean()):.4f}",f"- Fallback-trigger rate (<60% confidence): {fallback:.2%}","","## Per-class metrics","","| Label | Precision | Recall | F1 |","|---|---:|---:|---:|"]
  lines += [f"| {x} | {report[x]['precision']:.4f} | {report[x]['recall']:.4f} | {report[x]['f1-score']:.4f} |" for x in labels]; (out/"evaluation_report.md").write_text("\n".join(lines)+"\n",encoding="utf-8")
 if __name__ == "__main__": main()

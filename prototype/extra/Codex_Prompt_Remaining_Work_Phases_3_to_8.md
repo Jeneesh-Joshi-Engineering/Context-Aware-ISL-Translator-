@@ -90,7 +90,7 @@ The established WebSocket message contract (already implemented, reuse it — do
    - Compute and print overall test accuracy.
    - Generate a **confusion matrix** (as a PNG heatmap using matplotlib/seaborn) showing per-class performance — this is direct evidence for the project's "Recognition Accuracy" KPI.
    - Compute per-class precision/recall/F1 and save as a table in `model-training/saved_model/evaluation_report.md`.
-   - **Confidence threshold analysis:** for the test set, compute what fraction of predictions would fall below the 70% confidence threshold (i.e., would trigger the fallback state machine) — report this explicitly, since it's a direct measurement tied to the project's H4 hypothesis.
+   - **Confidence threshold analysis:** for the test set, compute what fraction of predictions would fall below the 60% confidence threshold (i.e., would trigger the fallback state machine) — report this explicitly, since it's a direct measurement tied to the project's H4 hypothesis.
 4. Both scripts must run via simple CLI commands, e.g.:
    ```bash
    python scripts/train_model.py --dataset-version v1
@@ -116,7 +116,7 @@ The established WebSocket message contract (already implemented, reuse it — do
    - Load the converted model on app startup: `await tf.loadLayersModel('model/model.json')`.
    - Maintain a **rolling buffer of the last 30 normalized landmark frames** (reuse the normalization logic already in `normalize.js` — do not reimplement it).
    - Every few frames (configurable, default every 3 frames), run `model.predict()` on the current 30-frame buffer.
-   - Apply the **70% confidence threshold**: only treat a prediction as valid if `max(softmax_output) >= 0.70`; otherwise mark it as "low confidence" and do not emit a keyword (this feeds directly into the Phase 7 fallback logic — expose a clear function/callback here that Phase 7's code can hook into, e.g. `onLowConfidence(callback)`).
+   - Apply the **60% confidence threshold**: only treat a prediction as valid if `max(softmax_output) >= 0.60`; otherwise mark it as "low confidence" and do not emit a keyword (this feeds directly into the Phase 7 fallback logic — expose a clear function/callback here that Phase 7's code can hook into, e.g. `onLowConfidence(callback)`).
    - Map the predicted class index back to a label string using the same `label_encoder.json` mapping used in training (copy this file, or the relevant mapping, into `frontend/model/` so frontend and backend/training all reference the identical mapping — do not hardcode label strings separately in JS).
    - Display the currently predicted word live on screen.
 3. **Latency instrumentation:** timestamp at "frame captured" and timestamp at "prediction displayed," compute the delta, and show a rolling average latency number on screen. Target is ≤50ms — if actual measured latency is consistently higher, log a clear console warning (don't silently ignore it; this is a project KPI, H2).
@@ -168,7 +168,7 @@ The established WebSocket message contract (already implemented, reuse it — do
 ### Requirements
 1. Create `frontend/js/fallback.js`:
    - A small state machine with states `TRACKING` and `FALLBACK_SPELLING`.
-   - Hook into `inference.js`'s low-confidence callback (from Section 2): if confidence stays below 70% for **3 consecutive prediction cycles** (configurable constant), transition to `FALLBACK_SPELLING`.
+   - Hook into `inference.js`'s low-confidence callback (from Section 2): if confidence stays below 60% for **3 consecutive prediction cycles** (configurable constant), transition to `FALLBACK_SPELLING`.
    - In `FALLBACK_SPELLING` state, show a simple on-screen finger-spelling/manual character entry UI (a basic letter picker or text input is sufficient — this doesn't need its own gesture-to-letter ML model, just a manual way for the user to spell the word).
    - Once the user submits a spelled word (or confidence recovers on its own), transition back to `TRACKING` and send the resulting keyword through the normal `wsClient.js` flow like any other recognized keyword.
    - Log every fallback trigger (timestamp, reason, duration spent in fallback) via the KPI logger below.

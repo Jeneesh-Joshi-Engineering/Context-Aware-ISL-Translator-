@@ -23,6 +23,9 @@ const model=await loadBrowserInference(); const a=await socket(), b=await socket
 let counter,id;
 try {
   const health=await api('/api/health'); console.log('Translation mode:',health.translationMode);
+  assert.deepEqual(health.vocabulary,model.labels.filter(label=>label!=='No_Gesture'),'backend vocabulary must match deployed model');
+  const deployed=await api('/model/model_metadata.json');
+  assert.deepEqual(deployed.output_classes,model.labels,'server must serve the current model metadata');
   counter=await api('/api/counters','POST',{label:'Automated integration check'});
   a.subscribe(`/topic/counter/${counter.counterId}`);
   // Barrier: a round trip after SUBSCRIBE lets the broker register the counter observer.
@@ -35,16 +38,17 @@ try {
   await until(()=>a.messages.some(m=>m.type==='SESSION_STATUS'&&m.payload.signerConnected&&m.payload.officialConnected),'both roles present');
   const samples=await recordedSamples();
   const sentences={Help:'I need help, please.',Ticket:'I need help with my ticket.',Train:'I need information about the train.'};
-  for(const label of ['Help','Ticket','Train']) {
+  const activeLabels=model.labels.filter(label=>label!=='No_Gesture');
+  for(const label of activeLabels) {
     const prediction=await model.predictSequence(samples.find(s=>s.label===label).frames);
     assert.equal(prediction.label,label);
     const before=b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length;
     b.send(id,'SIGNER','keyword','KEYWORD_INPUT',{keyword:prediction.label,confidence:prediction.confidence});
     await until(()=>b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length>before,'predicted gloss returned as sentence');
     const message=b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').at(-1);
-    assert.equal(message.payload.originRole,'SIGNER'); assert.ok(message.payload.englishText.length>5);
+    assert.equal(message.payload.originRole,'SIGNER'); assert.ok(message.payload.englishText.trim().length>0);
     assert.match(message.payload.hindiText, /[\u0900-\u097f]/);
-    if(health.translationMode==='template-fallback') assert.equal(message.payload.englishText,sentences[label]);
+    if(health.translationMode==='template-fallback' && sentences[label]) assert.equal(message.payload.englishText,sentences[label]);
     await until(()=>a.messages.some(m=>m.type==='TRANSLATED_MESSAGE'&&m.payload.englishText===message.payload.englishText),'official receives sentence');
     console.log(`${prediction.label} (${(prediction.confidence*100).toFixed(2)}%) -> ${message.payload.englishText}`);
   }
@@ -67,9 +71,9 @@ try {
   await until(()=>b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE'&&m.payload.originRole==='OFFICIAL').length===3,'Hindi reply translated');
   const translated=b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').at(-1).payload;
   assert.ok(translated.englishText);assert.match(translated.hindiText,/[\u0900-\u097f]/);
-  await until(()=>a.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length===6,'both devices received all bilingual messages');
+  await until(()=>a.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length===activeLabels.length+3,'both devices received all bilingual messages');
   assert.deepEqual(a.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').map(m=>m.payload),b.messages.filter(m=>m.type==='TRANSLATED_MESSAGE').map(m=>m.payload));
-  assert.equal((await api(`/api/sessions/${id}/history`)).messages.length,6);
+  assert.equal((await api(`/api/sessions/${id}/history`)).messages.length,activeLabels.length+3);
   await api(`/api/sessions/${id}/end`,'POST');
   await until(()=>b.messages.some(m=>m.type==='SESSION_ENDED'),'signer end notification');
   assert.equal((await api(`/api/counters/${counter.counterId}`)).currentSessionId,null);

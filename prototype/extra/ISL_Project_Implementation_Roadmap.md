@@ -14,7 +14,7 @@ This is a from-zero, step-by-step build guide matching the architecture already 
         |
         v
 [TensorFlow.js BiLSTM model, runs IN the browser]
-        |  (70% confidence fallback logic here)
+        |  (60% confidence fallback logic here)
         v
 [Recognized keyword, e.g. "Help"]
         |  WebSocket (real-time, bidirectional)
@@ -128,7 +128,7 @@ Your dossier specifies a **phased scope**: start with 3 words ("Hello", "Help", 
    ```
 4. **Train**, watching validation accuracy — with a small 3-word dataset expect this to converge fast. Use early stopping to avoid overfitting on your small dataset.
 5. **Evaluate** using a confusion matrix — this becomes evidence for your "Recognition Accuracy" KPI.
-6. **This is where your 70% Confidence Fallback logic lives:** after `model.predict()`, check `max(softmax_output)`. If it's below 0.70, don't commit to a prediction — flag it as "low confidence" so the frontend can trigger fallback (finger-spelling mode, per your Hypothesis H4).
+6. **This is where your 60% Confidence Fallback logic lives:** after `model.predict()`, check `max(softmax_output)`. If it's below 0.60, don't commit to a prediction — flag it as "low confidence" so the frontend can trigger fallback (finger-spelling mode, per your Hypothesis H4).
 
 **Deliverable for Week 6:** A trained `.h5`/SavedModel that classifies your 3-word dataset with a documented accuracy figure and confusion matrix — your first real KPI result.
 
@@ -152,7 +152,7 @@ Your dossier specifies a **phased scope**: start with 3 words ("Hello", "Help", 
    ```javascript
    const model = await tf.loadLayersModel('model/model.json');
    ```
-4. **Wire it to Phase 1:** buffer the last 30 frames of landmarks into a rolling window, convert to a tensor, run `model.predict()` on it continuously (e.g., every few frames via `requestAnimationFrame` or a fixed interval), apply the 0.70 confidence threshold, and display the predicted word live on screen.
+4. **Wire it to Phase 1:** buffer the last 30 frames of landmarks into a rolling window, convert to a tensor, run `model.predict()` on it continuously (e.g., every few frames via `requestAnimationFrame` or a fixed interval), apply the 0.60 confidence threshold, and display the predicted word live on screen.
 5. **Measure latency here** — time from "frame captured" to "prediction displayed." This is your Translation Latency KPI (target ≤50ms per your Hypothesis H2). If you're missing that target, the fixes are usually: smaller model, fewer landmarks (hands only vs. full holistic), or a shorter rolling window.
 
 **Deliverable:** A live, in-browser demo — webcam in, predicted word out, entirely client-side, with a measured latency number.
@@ -191,7 +191,7 @@ Your dossier specifies a **phased scope**: start with 3 words ("Hello", "Help", 
 ## 8. Phase 7 — Integration, Fallback, and Stress Testing (Week 9)
 
 1. **Wire all layers together** into one cohesive demo flow, ideally with two browser windows/devices (one "deaf user" view, one "official" view) sharing a WebSocket session.
-2. **Implement the fallback state machine (H4):** when confidence drops below 70% repeatedly (e.g., 3 frames in a row), switch the UI into a finger-spelling/manual character mode, let the user spell out the word, then automatically return to gesture-tracking mode. This directly answers one of your Measurable Sub-Questions.
+2. **Implement the fallback state machine (H4):** when confidence drops below 60% repeatedly (e.g., 3 frames in a row), switch the UI into a finger-spelling/manual character mode, let the user spell out the word, then automatically return to gesture-tracking mode. This directly answers one of your Measurable Sub-Questions.
 3. **Stress test:** drop the WebSocket connection mid-conversation, simulate poor lighting, test with an out-of-vocabulary gesture — confirm the system degrades gracefully rather than freezing (this maps to your "Rigid Failure States" root-cause finding).
 4. **Log every KPI automatically** as you test: Recognition Accuracy, Translation Latency, Context Generation Time, WebSocket Reliability (successful vs dropped packets), Bidirectional Response Time. You'll want a spreadsheet of these runs for your evaluation section.
 

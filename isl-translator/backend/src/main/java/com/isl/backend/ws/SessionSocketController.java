@@ -38,6 +38,11 @@ public class SessionSocketController {
             if (sessions.get(sessionId) != session) return java.util.concurrent.CompletableFuture.completedFuture(null);
             var messages = sessions.history(sessionId);
             List<String> history = messages == null ? List.of() : messages.stream().skip(Math.max(0, messages.size() - 8)).map(m -> m.englishText).toList();
+            // Isolated alphabet signs must remain letters, never invented passenger requests.
+            if (!official && source.matches("[A-Za-z]")) {
+                publishTranslation(sessionId, fallback.bilingual(source, language, false).message("SIGNER"));
+                return java.util.concurrent.CompletableFuture.completedFuture(null);
+            }
             return gemini.bilingual(source, language, official, history)
                 .exceptionally(error -> fallback.bilingual(source, language, official))
                 .thenAccept(text -> { if (sessions.get(sessionId) == session) publishTranslation(sessionId, text.message(official ? "OFFICIAL" : "SIGNER")); });

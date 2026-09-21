@@ -30,7 +30,7 @@ $('runCheck').onclick = async () => {
     ws = await connectSession(testId, 'SIGNER'); await waitFor(() => ws.connected, 'WebSocket connection');
     $('officialLink').href = `./official.html?session=${testId}`; $('officialLink').hidden = false;
     $('endCheck').hidden = false; $('statusStrip').hidden = false;
-    for (const expected of ['Help','No_Gesture','Ticket','Train']) {
+    for (const expected of model.labels) {
       const sample = samples.find(s => s.label === expected);
       const result = await model.predictSequence(sample.frames);
       log(`${expected}: model predicted ${result.label}, confidence ${(result.confidence*100).toFixed(2)}%, ${result.latencyMs.toFixed(0)} ms`);

@@ -238,7 +238,7 @@ def train_model(data_dir: Path, output_dir: Path):
         "test_accuracy": float(test_accuracy),
         "test_loss": float(test_loss),
         "training_epochs": len(history.history['loss']),
-        "confidence_threshold": 0.70,
+        "confidence_threshold": 0.60,
         "framework": "TensorFlow/Keras",
         "input_shape": [num_frames, num_features],
         "output_classes": sorted([idx_to_label[i] for i in range(num_classes)])

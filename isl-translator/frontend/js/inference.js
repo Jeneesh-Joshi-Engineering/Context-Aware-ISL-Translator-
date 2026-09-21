@@ -5,7 +5,7 @@ import { logKpi } from "./kpiLogger.js";
 const MODEL_URL = new URL("../model/model.json", import.meta.url).href;
 const METADATA_URL = new URL("../model/model_metadata.json", import.meta.url).href;
 const LABEL_ENCODER_URL = new URL("../model/label_encoder.json", import.meta.url).href;
-const DEFAULT_CONFIDENCE_THRESHOLD = 0.7;
+const DEFAULT_CONFIDENCE_THRESHOLD = 0.6;
 const INFERENCE_EVERY_NTH_FRAME = 3;
 const REQUIRED_STABLE_PREDICTIONS = 2;
 

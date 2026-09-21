@@ -23,7 +23,7 @@ class PipelineConfig:
     scale_reference_index: int = 9  # middle-finger MCP for MediaPipe Hands
     scale_epsilon: float = 1e-6
     random_seed: int = 42
-    confidence_threshold: float = 0.70
+    confidence_threshold: float = 0.60
     epochs: int = 100
     batch_size: int = 8
     early_stopping_patience: int = 10

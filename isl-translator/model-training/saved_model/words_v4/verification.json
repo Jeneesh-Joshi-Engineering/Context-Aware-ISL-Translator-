@@ -1,0 +1,72 @@
+{
+  "heldoutSequences": 49,
+  "maxProbabilityDifference": 2.384185791015625e-7,
+  "passed": true,
+  "trainingExampleDiagnostics": [
+    {
+      "expected": "Counter",
+      "predicted": "Counter",
+      "confidence": 0.9958096742630005
+    },
+    {
+      "expected": "Entrance",
+      "predicted": "Entrance",
+      "confidence": 0.995639443397522
+    },
+    {
+      "expected": "Exit",
+      "predicted": "Exit",
+      "confidence": 0.9949963092803955
+    },
+    {
+      "expected": "Help",
+      "predicted": "Help",
+      "confidence": 0.9963915944099426
+    },
+    {
+      "expected": "Money",
+      "predicted": "Money",
+      "confidence": 0.9954723119735718
+    },
+    {
+      "expected": "No_Gesture",
+      "predicted": "No_Gesture",
+      "confidence": 0.9951362013816833
+    },
+    {
+      "expected": "Police",
+      "predicted": "Police",
+      "confidence": 0.996264636516571
+    },
+    {
+      "expected": "Receipt",
+      "predicted": "Receipt",
+      "confidence": 0.9961637258529663
+    },
+    {
+      "expected": "Security",
+      "predicted": "Security",
+      "confidence": 0.9967165589332581
+    },
+    {
+      "expected": "Ticket",
+      "predicted": "Ticket",
+      "confidence": 0.9957723021507263
+    },
+    {
+      "expected": "Train",
+      "predicted": "Train",
+      "confidence": 0.9972008466720581
+    },
+    {
+      "expected": "When",
+      "predicted": "When",
+      "confidence": 0.9953718781471252
+    },
+    {
+      "expected": "Where",
+      "predicted": "Where",
+      "confidence": 0.9964323043823242
+    }
+  ]
+}

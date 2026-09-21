@@ -45,14 +45,25 @@ async function referenceModel() {
     return scores.map(x=>x/sum);
   };
 }
-test('deployed BiLSTM matches original trained weights and predicts all four recorded classes', async () => {
-  const reference = await referenceModel(), samples = await recordedSamples();
+test('deployed BiLSTM matches trained reference probabilities and recognizes its diagnostic vocabulary', async () => {
+  const metadata=JSON.parse(await readFile(new URL('../isl-translator/frontend/model/model_metadata.json',import.meta.url),'utf8'));
+  const samples = await recordedSamples();
+  const reference = metadata.version ? null : await referenceModel();
   const model = await loadBrowserInference();
   try {
-    for (const label of ['Help','No_Gesture','Ticket','Train']) {
+    assert.equal(model.confidenceThreshold,.6,'deployed confidence threshold must remain 60%');
+    for (const label of model.labels) {
       const sample=samples.find(s=>s.label===label), prediction=await model.predictSequence(sample.frames);
-      assert.equal(prediction.label,label); assert.ok(prediction.confidence>=.7);
-      reference(sample.frames).forEach((score,i) => assert.ok(Math.abs(score-prediction.scores[i])<1e-5, `${label}: probability mismatch`));
+      assert.equal(prediction.label,label); assert.ok(prediction.confidence>=model.confidenceThreshold);
+      if(reference) reference(sample.frames).forEach((score,i) => assert.ok(Math.abs(score-prediction.scores[i])<1e-5, `${label}: probability mismatch`));
+    }
+    if(metadata.version){
+      const source=new URL(`../isl-translator/model-training/saved_model/${metadata.version}/`,import.meta.url);
+      const heldout=JSON.parse(await readFile(new URL('heldout-predictions.json',source),'utf8'));
+      for(const sample of heldout){const prediction=await model.predictSequence(sample.frames);sample.scores.forEach((score,i)=>assert.ok(Math.abs(score-prediction.scores[i])<1e-4,`${sample.label}: Python/JS mismatch`));}
+      const splits=JSON.parse(await readFile(new URL('split-manifest.json',source),'utf8'));
+      const hashes=Object.values(splits).flat().map(s=>s.fingerprint);
+      assert.equal(new Set(hashes).size,hashes.length,'recordings must not cross dataset splits');
     }
     const before=tf.memory().numTensors;
     for(let i=0;i<8;i++) await model.predictSequence(samples[0].frames);

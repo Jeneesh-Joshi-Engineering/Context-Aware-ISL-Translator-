@@ -20,7 +20,7 @@ No Live Server, Python server, separate ML server, or separate frontend server i
 
 1. On the official screen, create a counter with a label. Keep its permanent `CTR-…` code and QR sign.
 2. Click **Open signer device** for a same-computer demonstration. The official screen opens the conversation automatically. Allow camera access on the signer screen.
-3. Keep both hands within view and perform the trained **Help**, **Ticket**, or **Train** gesture. The model uses 30 landmark frames, requires stable confidence, and sends each held sign once. Return to idle before repeating the same sign.
+3. Keep both hands within view and perform a recorded vocabulary sign such as **Help**, **Ticket**, **Train**, **Counter**, **Entrance**, **Exit**, **Money**, **Receipt**, **Security**, **Police**, **Where**, or **When**. The model uses 30 landmark frames, requires stable confidence, and sends each held sign once. Return to idle before repeating the same sign.
 4. Watch the Camera, Recognition and Connection indicators separately. Both screens receive the same English message. The official can type a reply or select English/Hindi, press Listen, speak, Stop, review and Send. Both screens show English and Hindi. Browser speech recognition may need internet.
 5. End the conversation. The official screen returns to Ready; the same counter QR can serve the next visitor. A second visitor sees Busy until the counter is free.
 
@@ -54,7 +54,7 @@ npm run test:integration
 
 Without `GEMINI_API_KEY`, the app explicitly shows **offline sentences** and uses deterministic templates. To enable Gemini, set that environment variable in the terminal before starting the server; optional settings are `GEMINI_MODEL` and `GEMINI_TIMEOUT_MS`. Alternatively copy `.env.example` to `.env` at the repository root and set the key there; startup reads this local file. Never place a key in frontend code or commit it. Provider failures fall back to templates.
 
-The provided model has four classes: Help, No_Gesture, Ticket and Train. It does not recognize arbitrary ISL syntax, fingerspelling, or every sign. The recorded-input checks validate deployment and integration, not independent model accuracy. See [model provenance](isl-translator/frontend/model/README.md).
+The active model is `words_v4`: 12 service words plus No_Gesture (13 classes). The alphabet model is archived. It recognizes individual glosses; it does not interpret unrestricted ISL sentences. Current development-test accuracy is **39/49 (79.59%)**, with weak Help, Security, When and idle recognition. The chronological split is not signer-independent. See [per-class results](isl-translator/docs/word-model-results.md), [model provenance](isl-translator/frontend/model/README.md), and the [48-hour collection plan](isl-translator/docs/dataset-plan-48-hours.md).
 
 Counter identifiers persist in `isl-translator/backend/data/counters.json` when using the launcher. Conversation history is in memory and resets when the server restarts. Runtime data, installed dependencies and generated browser assets are intentionally excluded from Git; source code, the lockfile, trained browser weights and asset preparation scripts are tracked.
 

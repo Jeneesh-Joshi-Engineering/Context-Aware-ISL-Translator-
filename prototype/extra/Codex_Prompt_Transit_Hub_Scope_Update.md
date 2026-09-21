@@ -77,7 +77,7 @@ Same technical requirements as before, scoped to the 4-word baseline first:
    - Outputs a training-history accuracy/loss plot.
 2. `model-training/scripts/evaluate.py`:
    - Test-set accuracy, confusion matrix PNG, per-class precision/recall/F1 in `evaluation_report.md`.
-   - Confidence-threshold analysis: % of test predictions falling below 70% confidence (this is the fallback-trigger rate KPI).
+   - Confidence-threshold analysis: % of test predictions falling below 60% confidence (this is the fallback-trigger rate KPI).
 3. Both must run standalone via CLI, e.g. `python scripts/train_model.py --dataset-version v1`, CPU-only compatible (this is a small prototype dataset, not big-data scale).
 
 ---
@@ -89,7 +89,7 @@ Unchanged technical approach from before:
 1. `model-training/scripts/convert_to_tfjs.sh`: converts `saved_model/model.h5` into `frontend/model/model.json` + weights via `tensorflowjs_converter`.
 2. `frontend/js/inference.js`:
    - Loads the converted model, maintains a rolling 30-frame buffer using the existing `normalize.js` logic (don't reimplement it).
-   - Predicts every few frames, applies the **70% confidence threshold**, maps predicted index → label string using the same `label_encoder.json`/`labels.json` mapping used in training (copy the relevant mapping file into `frontend/model/` so training and frontend never drift apart).
+   - Predicts every few frames, applies the **60% confidence threshold**, maps predicted index → label string using the same `label_encoder.json`/`labels.json` mapping used in training (copy the relevant mapping file into `frontend/model/` so training and frontend never drift apart).
    - Exposes an `onLowConfidence(callback)` hook for the fallback state machine (Section 5).
    - Displays the live predicted word and a rolling-average latency number (target ≤50ms) on screen; logs a console warning if latency consistently exceeds target.
 3. Wire into `main.js` as a distinct mode alongside the existing recording mode, without breaking recording functionality.

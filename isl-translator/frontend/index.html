@@ -1,8 +1,57 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ISL Bridge · Signer</title><link rel="icon" type="image/svg+xml" href="./favicon.svg"><link rel="stylesheet" href="./bridge.css"><script defer src="./vendor/sockjs.min.js"></script><script defer src="./vendor/stomp.umd.min.js"></script><script defer src="./vendor/qrcode.min.js"></script><script defer src="./vendor/tf.min.js"></script><script type="module" src="./js/signer.js"></script></head>
-<body><header class="nav"><div class="nav-inner"><a class="brand" href="./index.html"><span class="brand-mark">ISL</span><span>ISL Bridge<span class="role-label">Signer device</span></span></a><nav class="nav-links"><a href="./about.html" target="_blank" rel="noopener">About</a><span class="badge" data-server>Checking server…</span></nav></div></header><a class="skip-link" href="#mainContent">Skip to content</a><main id="mainContent" class="app"><p id="appError" class="alert error" role="alert" hidden></p>
-<section id="landing" data-view class="view narrow card center"><p class="eyebrow">A conversation starts here</p><h1>Hello! <span style="color:var(--blue)">नमस्ते!</span></h1><p class="muted">Scan the QR at your service counter, or enter its code below. Your signs become words on the official’s screen.</p><form id="counterForm" class="gap-top"><label for="counterInput">Counter code</label><div class="row"><input id="counterInput" class="code" placeholder="CTR-4F2A" required maxlength="8" autocomplete="off"><button class="primary" id="connectCounter">Connect</button></div></form><div class="divider"></div><button id="startSession" class="secondary full">Create a manual session</button><p class="small muted">No counter sign? Share a temporary code with the official.</p></section>
-<section id="loading" data-view class="view narrow card center" hidden><span class="spinner"></span><h1 class="gap-top">Connecting you…</h1><p id="loadingText" class="muted">Opening a conversation at your counter.</p></section>
-<section id="busy" data-view class="view narrow card center" hidden><div class="ready-symbol" style="margin:0 auto 24px">⌛</div><p class="eyebrow">We’ll connect you automatically</p><h1>Your counter is helping someone.</h1><p class="muted">Please wait here. Your conversation will open as soon as the counter is free.</p><p id="busyCounter" class="code"></p><button id="cancelWait" class="secondary gap-top">Cancel waiting</button></section>
-<section id="invite" data-view class="view narrow card center" hidden><p class="eyebrow">Manual connection</p><h1>Share this session</h1><p class="muted">Ask the official to scan this QR or enter the code in their setup screen.</p><div id="qrcode" class="qr"></div><p id="sessionCode" class="code big-code"></p><a id="officialLink" target="_blank" rel="noopener" class="secondary gap-top">Open official device</a><p class="muted small">Waiting for the official to join…</p><button id="cancelInvite" class="text-button">Cancel session</button></section>
-<section id="translate" data-view class="view" hidden><div class="row between wrap"><div><p class="eyebrow">Your voice, through signs</p><h1>Live translation</h1></div><button id="endSession" class="danger">End conversation</button></div><p id="reconnecting" class="alert" hidden>Reconnecting to your conversation. Please wait before signing.</p><div id="statusStrip" class="session-strip">Connecting…</div><div class="workspace"><section class="card"><div class="row between"><h2>Sign to communicate</h2><span class="badge" id="captureBadge">Camera off</span></div><div class="camera-box"><video id="video" autoplay muted playsinline></video><canvas id="overlay"></canvas><div id="cameraOverlay" class="camera-cover"><span class="camera-icon">◎</span><p id="cameraHint">Allow camera access to start signing.</p></div></div><div class="pipeline" aria-live="polite"><div><strong>Camera</strong><span id="cameraState">Not started</span></div><div><strong>Recognition</strong><span id="modelState">Loading…</span></div><div><strong>Connection</strong><span id="connectionState">Connecting…</span></div></div><p id="cameraError" class="alert error" role="alert" hidden></p><p id="modelError" class="alert error" role="alert" hidden></p><div class="row wrap"><button id="retryCamera" class="secondary">Start / retry camera</button><button id="retryModel" class="text-button" hidden>Retry recognition</button></div><div class="prediction gap-top"><span class="eyebrow">Recognized gloss</span><p><strong id="prediction" role="status" aria-live="polite">Waiting for hands</strong></p><p id="predictionDetail" class="small muted">Keep both hands in frame in good light.</p></div><div class="gap-top"><p class="small muted">Trained signs</p><div class="gloss-list"><span class="gloss">HELP</span><span class="gloss">TICKET</span><span class="gloss">TRAIN</span></div><p class="small muted">Hold a sign steadily. Lower your hands before repeating it.</p></div></section><section class="card chat-card"><div class="row between wrap"><h2>Conversation</h2><span class="badge"><span class="status-dot"></span> Shared on both devices</span></div><div id="chatLog" class="chat-log" aria-live="polite" role="log"></div><p id="translationState" class="small muted">Recognized signs will be translated automatically.</p></section></div></section>
-<section id="ended" data-view class="view narrow card center" hidden><div class="ready-symbol" style="margin:0 auto 24px">✓</div><h1>Conversation complete</h1><p class="muted">Your camera has stopped. Thank you for using ISL Bridge.</p><a href="./index.html" class="primary gap-top">Back to start</a></section><p class="footer">Camera video stays on this device. Only recognized words are shared.</p></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ISL Bridge · Signer</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg"><link rel="stylesheet" href="./bridge.css">
+  <script defer src="./vendor/sockjs.min.js"></script><script defer src="./vendor/stomp.umd.min.js"></script>
+  <script defer src="./vendor/qrcode.min.js"></script><script defer src="./vendor/tf.min.js"></script>
+  <script type="module" src="./js/signer.js"></script>
+</head>
+<body class="signer-page">
+<header class="nav"><div class="nav-inner">
+  <a class="brand" href="./index.html"><span class="brand-mark">ISL</span><span>ISL Bridge<span class="role-label">Your space to be understood</span></span></a>
+  <nav class="nav-links"><a href="./about.html" target="_blank" rel="noopener">About</a><span class="badge" data-server>Checking server…</span></nav>
+</div></header>
+<a class="skip-link" href="#mainContent">Skip to content</a>
+<main id="mainContent" class="app">
+  <p id="appError" class="alert error" role="alert" hidden></p>
+  <section id="landing" data-view class="view welcome-layout">
+    <div class="welcome-copy">
+      <p class="eyebrow">Every conversation belongs here</p>
+      <h1 class="greetings"><span lang="en">Hello<span class="greeting-dot">.</span></span><span lang="hi">नमस्ते<span class="greeting-dot">।</span></span><span lang="mr">नमस्कार<span class="greeting-dot">।</span></span></h1>
+      <p class="welcome-description">A little help. A clear answer.<br>A conversation in your own hands.</p>
+      <div class="welcome-note"><span class="welcome-icon" aria-hidden="true">↔</span><p>Sign on your device.<br>Read the reply, together.</p></div>
+      <p class="small muted">English · हिन्दी · मराठी greetings</p>
+    </div>
+    <div class="card connect-card">
+      <span class="connect-symbol" aria-hidden="true">↗</span>
+      <h2>Let’s connect you</h2><p class="muted">Scan the QR at your service counter, or enter its code below.</p>
+      <form id="counterForm" class="gap-top"><label for="counterInput">Counter code</label><div class="row"><input id="counterInput" class="code" placeholder="CTR-4F2A" required maxlength="8" autocomplete="off"><button class="primary" id="connectCounter">Connect</button></div></form>
+      <div class="divider"></div><button id="startSession" class="secondary full">Create a manual session</button>
+      <p class="small muted">No counter sign? Share a temporary code with the official.</p>
+      <div class="privacy-note"><span aria-hidden="true">◈</span> Your camera stays on your device.</div>
+    </div>
+  </section>
+  <section id="loading" data-view class="view narrow card center" hidden><span class="spinner" aria-hidden="true"></span><h1 class="gap-top">Connecting you…</h1><p id="loadingText" class="muted">Opening a conversation at your counter.</p></section>
+  <section id="busy" data-view class="view narrow card center" hidden><div class="ready-symbol" style="margin:0 auto 24px" aria-hidden="true">⌛</div><p class="eyebrow">We’ll connect you automatically</p><h1>Your counter is helping someone.</h1><p class="muted">Please wait here. Your conversation will open as soon as the counter is free.</p><p id="busyCounter" class="code"></p><button id="cancelWait" class="secondary gap-top">Cancel waiting</button></section>
+  <section id="invite" data-view class="view narrow card center" hidden><p class="eyebrow">Manual connection</p><h1>Share this session</h1><p class="muted">Ask the official to scan this QR or enter the code in their setup screen.</p><div id="qrcode" class="qr"></div><p id="sessionCode" class="code big-code"></p><a id="officialLink" target="_blank" rel="noopener" class="secondary gap-top">Open official device</a><p class="muted small">Waiting for the official to join…</p><button id="cancelInvite" class="text-button">Cancel session</button></section>
+  <section id="translate" data-view class="view" hidden>
+    <div class="row between wrap live-heading"><div><p class="eyebrow">Hello · <span lang="hi">नमस्ते</span> · <span lang="mr">नमस्कार</span></p><h1>Your conversation, connected.</h1><p class="muted">Take your time. We’re here to listen.</p></div><button id="endSession" class="danger">End conversation</button></div>
+    <p id="reconnecting" class="alert" hidden>Reconnecting to your conversation. Please wait before signing.</p><div id="statusStrip" class="session-strip">Connecting…</div>
+    <div class="workspace">
+      <section class="card capture-card"><div class="row between"><h2>Sign to communicate</h2><span class="badge" id="captureBadge">Camera off</span></div>
+        <div class="camera-box"><video id="video" autoplay muted playsinline aria-label="Your camera preview"></video><canvas id="overlay" aria-hidden="true"></canvas><div id="cameraOverlay" class="camera-cover"><span class="camera-icon" aria-hidden="true">◎</span><p id="cameraHint">Allow camera access to start signing.</p></div></div>
+        <div class="pipeline" aria-live="polite"><div><strong>Camera</strong><span id="cameraState">Not started</span></div><div><strong>Recognition</strong><span id="modelState">Loading…</span></div><div><strong>Connection</strong><span id="connectionState">Connecting…</span></div></div>
+        <p id="cameraError" class="alert error" role="alert" hidden></p><p id="modelError" class="alert error" role="alert" hidden></p>
+        <div class="row wrap"><button id="retryCamera" class="secondary">Start / retry camera</button><button id="retryModel" class="text-button" hidden>Retry recognition</button></div>
+        <div class="prediction gap-top"><span class="eyebrow">Recognized sign</span><p><strong id="prediction" role="status" aria-live="polite">Waiting for hands</strong></p><p id="predictionDetail" class="small muted">Keep both hands in frame in good light.</p></div>
+        <p class="signing-tip">Keep your hands in view. Pause between signs, and lower your hands before repeating.</p>
+      </section>
+      <section class="card chat-card"><div class="row between wrap"><h2>Conversation</h2><span class="badge"><span class="status-dot" aria-hidden="true"></span> Shared on both devices</span></div><div id="chatLog" class="chat-log" aria-live="polite" role="log"></div><p id="translationState" class="small muted">Recognized signs will be translated automatically.</p></section>
+    </div>
+  </section>
+  <section id="ended" data-view class="view narrow card center" hidden><div class="ready-symbol" style="margin:0 auto 24px" aria-hidden="true">✓</div><h1>Conversation complete</h1><p class="muted">Your camera has stopped. Thank you for using ISL Bridge.</p><a href="./index.html" class="primary gap-top">Back to start</a></section>
+  <p class="footer">A shared understanding starts here. Camera video stays on this device.</p>
+</main>
+</body></html>

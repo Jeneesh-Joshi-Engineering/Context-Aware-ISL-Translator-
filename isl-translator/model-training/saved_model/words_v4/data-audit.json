@@ -1,0 +1,61 @@
+{
+  "classes": [
+    "Counter",
+    "Entrance",
+    "Exit",
+    "Help",
+    "Money",
+    "No_Gesture",
+    "Police",
+    "Receipt",
+    "Security",
+    "Ticket",
+    "Train",
+    "When",
+    "Where"
+  ],
+  "unique_counts": {
+    "Counter": 30,
+    "Entrance": 23,
+    "Hello": 7,
+    "Exit": 30,
+    "Help": 28,
+    "Security": 17,
+    "Money": 18,
+    "No_Gesture": 20,
+    "Police": 24,
+    "Receipt": 30,
+    "Ticket": 26,
+    "Train": 46,
+    "Where": 27,
+    "When": 12
+  },
+  "excluded_insufficient": {
+    "Hello": 7
+  },
+  "duplicates_removed": 1678,
+  "rejected": {
+    "fewer_than_15_tracked_frames": 467
+  },
+  "resampled_export_counts": {
+    "Counter": 13,
+    "Entrance": 19,
+    "Hello": 3,
+    "Help": 124,
+    "Security": 450,
+    "Money": 176,
+    "No_Gesture": 9,
+    "Police": 305,
+    "Receipt": 7,
+    "Ticket": 141,
+    "Train": 46,
+    "Where": 331,
+    "When": 178
+  },
+  "conflicting_unique_removed": 0,
+  "splits": {
+    "train": 233,
+    "validation": 49,
+    "test": 49
+  }
+}

@@ -34,7 +34,7 @@ def main():
                tf.keras.callbacks.ModelCheckpoint(out / "best_model.h5", monitor="val_loss", save_best_only=True)]
     history=model.fit(Xtr,ytr,validation_data=(Xv,yv),epochs=args.epochs,callbacks=callbacks,verbose=1)
     model.save(out / "model.h5"); model.export(out / "model_savedmodel")
-    (out / "model_metadata.json").write_text(json.dumps({"num_classes":n,"input_shape":list(Xtr.shape[1:]),"confidence_threshold":.7,"label_mapping":encoder.get("label_to_index", encoder)},indent=2),encoding="utf-8")
+    (out / "model_metadata.json").write_text(json.dumps({"num_classes":n,"input_shape":list(Xtr.shape[1:]),"confidence_threshold":.6,"label_mapping":encoder.get("label_to_index", encoder)},indent=2),encoding="utf-8")
     fig, axes=plt.subplots(1,2,figsize=(11,4))
     for key in ("loss","val_loss"): axes[0].plot(history.history[key],label=key)
     for key in ("accuracy","val_accuracy"): axes[1].plot(history.history[key],label=key)

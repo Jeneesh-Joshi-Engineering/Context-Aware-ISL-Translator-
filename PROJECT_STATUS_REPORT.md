@@ -68,7 +68,7 @@ Your project is **~45% complete** based on the roadmap. The data acquisition and
 - ❌ No active training pipeline for 2026 dataset
 - ❌ No trained model (either `.h5` or SavedModel format)
 - ❌ No confusion matrix or recognition accuracy KPI measured
-- ❌ No 70% confidence threshold logic implemented in training loop
+- ❌ No 60% confidence threshold logic implemented in training loop
 
 **Legacy files found but marked as archived:**
 - [config.py](config.py), [data.py](data.py), [model.py](model.py), [train.py](train.py) — these are commented as "legacy monolithic" and point to the active pipeline under `model-training/`
@@ -91,7 +91,7 @@ Your project is **~45% complete** based on the roadmap. The data acquisition and
    - Categorical cross-entropy loss
    - Early stopping (patience=10)
    - Validation monitoring
-   - Confidence threshold tracking (70% target)
+   - Confidence threshold tracking (60% target)
 2. Implement data pipeline: raw JSON → preprocessing → train/val/test split → training loop
 3. Save trained model to `model-training/saved_model/model.h5` and `model-training/saved_model/model_savedmodel/`
 4. Generate confusion matrix and accuracy report
@@ -122,7 +122,7 @@ Your project is **~45% complete** based on the roadmap. The data acquisition and
    - Load model: `tf.loadLayersModel('frontend/model/model.json')`
    - Rolling window of last 30 frames
    - Continuous prediction (e.g., every 3 frames)
-   - Apply 70% confidence threshold
+   - Apply 60% confidence threshold
    - Display predicted word on screen
 3. **Latency measurement:**
    - Timestamp at capture → timestamp at display
@@ -167,7 +167,7 @@ Your project is **~45% complete** based on the roadmap. The data acquisition and
    - Use system prompt: *"Convert isolated ISL keywords into a single natural polite sentence for banking/transit context. Output only the sentence."*
    - Add timeout and error handling
 2. **Frontend WebSocket client:**
-   - On BiLSTM prediction (confidence ≥ 70%), send JSON: `{"type":"KEYWORD_DETECTED","keyword":"Help"}`
+   - On BiLSTM prediction (confidence ≥ 60%), send JSON: `{"type":"KEYWORD_DETECTED","keyword":"Help"}`
    - Listen for response type `{"type":"CONTEXTUAL_RESPONSE","sentence":"..."}`
    - Display sentence on official's screen
 3. **Latency logging:**
@@ -223,14 +223,14 @@ Your project is **~45% complete** based on the roadmap. The data acquisition and
 
 **Status:**
 - ❌ No end-to-end integration test harness
-- ❌ No fallback state machine (confidence < 70% → finger-spelling mode)
+- ❌ No fallback state machine (confidence < 60% → finger-spelling mode)
 - ❌ No stress testing (dropped connections, poor lighting, OOV gestures)
 - ❌ No KPI logging framework
 - ❌ No two-client demo (deaf user + official side-by-side)
 
 **What is needed:**
 1. **Fallback state machine:**
-   - If BiLSTM confidence < 70% for N consecutive frames (e.g., N=3), switch UI to finger-spelling mode
+   - If BiLSTM confidence < 60% for N consecutive frames (e.g., N=3), switch UI to finger-spelling mode
    - Show on-screen keyboard or gesture-to-letter mapping
    - Let user manually spell out word
    - Auto-return to gesture tracking when confidence recovers
@@ -395,7 +395,7 @@ Your project is **~45% complete** based on the roadmap. The data acquisition and
 | Context generation time <5s | 5 | 📝 To do | Backend |
 | Speech-to-Text integration | 6 | 📝 To do | Frontend |
 | Bidirectional response time measured | 6 | 📝 To do | Frontend/Backend |
-| Fallback state machine (confidence <70%) | 7 | 📝 To do | Frontend |
+| Fallback state machine (confidence <60%) | 7 | 📝 To do | Frontend |
 | Full KPI logging framework | 7 | 📝 To do | All |
 | Two-client demo (deaf user + official) | 7 | 📝 To do | All |
 | 40+ sign dataset | 8 | 📝 To do | All |

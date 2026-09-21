@@ -24,6 +24,14 @@ try { await access(taskFile); } catch {
 // These are development fixtures, not an independent model-accuracy evaluation.
 const fixtureDir = path.join(root, 'isl-translator/frontend/fixtures');
 await mkdir(fixtureDir, { recursive: true });
+const metadata = JSON.parse(await readFile(path.join(root, 'isl-translator/frontend/model/model_metadata.json'), 'utf8'));
+if (metadata.version) {
+  const version = metadata.version;
+  if (!/^[a-zA-Z0-9_-]+$/.test(version)) throw new Error('Invalid model version');
+  const source = path.join(root, 'isl-translator/model-training/saved_model', version, 'demo-samples.json');
+  await cp(source, path.join(fixtureDir, 'recorded-landmarks.json'));
+  console.log(`Prepared local assets and curated ${version} development fixtures (not accuracy-test data).`);
+} else {
 const { readdir } = await import('node:fs/promises');
 const raw = path.join(root, 'isl-translator/model-training/dataset/raw');
 const samples = [];
@@ -40,3 +48,4 @@ for (const entry of await readdir(raw, { withFileTypes: true })) {
 }
 await writeFile(path.join(fixtureDir, 'recorded-landmarks.json'), JSON.stringify(samples));
 console.log(`Prepared local browser assets and ${samples.length} recorded landmark sequences.`);
+}
