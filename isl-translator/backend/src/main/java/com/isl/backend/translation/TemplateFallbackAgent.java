@@ -20,7 +20,18 @@ public class TemplateFallbackAgent {
                 String letter = source.trim().toUpperCase(java.util.Locale.ROOT);
                 return new BilingualText("Letter " + letter + ".", "अक्षर " + letter + "।", "offline-phrase");
             }
-            String hi = switch (source.trim().toLowerCase(java.util.Locale.ROOT)) {
+            String hi = switch (source.trim().replace('_', ' ').toLowerCase(java.util.Locale.ROOT)) {
+                case "bus" -> "मुझे बस के बारे में जानकारी चाहिए।";
+                case "cancel" -> "मुझे रद्द करने के संबंध में सहायता चाहिए।";
+                case "flight" -> "मुझे उड़ान के बारे में जानकारी चाहिए।";
+                case "late" -> "क्या देरी है?";
+                case "lost" -> "मुझे अपनी खोई हुई चीज़ ढूँढने में सहायता चाहिए।";
+                case "luggage" -> "मुझे अपने सामान के संबंध में सहायता चाहिए।";
+                case "medical help" -> "कृपया मुझे चिकित्सा सहायता चाहिए।";
+                case "pay" -> "मैं भुगतान करना चाहता हूँ।";
+                case "seat" -> "मुझे अपनी सीट के संबंध में सहायता चाहिए।";
+                case "time" -> "अभी कितने बजे हैं?";
+                case "what time" -> "कितने बजे?";
                 case "help" -> "कृपया मेरी मदद करें।";
                 case "ticket" -> "मुझे अपने टिकट के संबंध में सहायता चाहिए।";
                 case "train" -> "मुझे ट्रेन के बारे में जानकारी चाहिए।";
@@ -48,7 +59,18 @@ public class TemplateFallbackAgent {
     public String sentenceFor(String keyword) {
         String clean = keyword == null ? "" : keyword.trim().replace('_', ' ');
         if (clean.isBlank()) return "I need assistance.";
-        return switch (clean.toLowerCase()) {
+        return switch (clean.toLowerCase(java.util.Locale.ROOT)) {
+            case "bus" -> "I need information about the bus.";
+            case "cancel" -> "I need help with a cancellation.";
+            case "flight" -> "I need information about the flight.";
+            case "late" -> "Is there a delay?";
+            case "lost" -> "I need help finding something I lost.";
+            case "luggage" -> "I need help with my luggage.";
+            case "medical help" -> "I need medical assistance, please.";
+            case "pay" -> "I would like to pay.";
+            case "seat" -> "I need help with my seat.";
+            case "time" -> "What time is it?";
+            case "what time" -> "At what time?";
             case "help" -> "I need help, please.";
             case "train" -> "I need information about the train.";
             case "ticket" -> "I need help with my ticket.";

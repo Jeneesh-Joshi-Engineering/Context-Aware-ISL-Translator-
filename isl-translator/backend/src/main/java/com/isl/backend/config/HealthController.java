@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "*")
+
 public class HealthController {
     private final boolean geminiConfigured;
     private final java.util.List<String> vocabulary;

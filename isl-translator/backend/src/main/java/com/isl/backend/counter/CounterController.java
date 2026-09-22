@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/counters")
-@CrossOrigin(origins = "*")
+
 public class CounterController {
     private final CounterService counters;
     public CounterController(CounterService counters) { this.counters = counters; }

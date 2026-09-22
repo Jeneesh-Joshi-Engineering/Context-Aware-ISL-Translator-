@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.cache
+node_modules
+output
+**/target
+**/data
+**/vendor
+**/fixtures
+**/__pycache__
+isl-translator/model-training/dataset
+isl-translator/model-training/archive
+*.log

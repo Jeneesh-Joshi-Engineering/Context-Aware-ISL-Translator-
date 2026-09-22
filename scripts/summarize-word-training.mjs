@@ -1,5 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
-const root=new URL('../isl-translator/model-training/saved_model/words_v4/',import.meta.url);
+const active=JSON.parse(await readFile(new URL('../isl-translator/frontend/model/model_metadata.json',import.meta.url),'utf8'));
+const version=process.argv[2] || active.version;
+if(!/^[a-zA-Z0-9_-]+$/.test(version)) throw new Error('Invalid model version');
+const root=new URL(`../isl-translator/model-training/saved_model/${version}/`,import.meta.url);
 const report=JSON.parse(await readFile(new URL('training-report.json',root),'utf8'));
 const audit=JSON.parse(await readFile(new URL('data-audit.json',root),'utf8'));
 const rows=report.classes.map(label=>{
@@ -9,20 +12,20 @@ const rows=report.classes.map(label=>{
 const best=report.history.val_loss.indexOf(Math.min(...report.history.val_loss));
 const text=`# Word-only model: training and evaluation
 
-Active run: **words_v4**. The previous alphabet model is archived under model-training/archive/alphabet-expanded-v3. The source recordings were preserved.
+Reported run: **${version}**. The previous alphabet model is archived under model-training/archive/alphabet-expanded-v3. The words_v4 browser model is archived under model-training/archive/words-v4/browser-model. The source recordings were preserved.
 
 ## Results
 
-- 12 words plus No_Gesture, 13 classes total; no alphabet outputs.
+- ${report.classes.length-1} words plus No_Gesture, ${report.classes.length} classes total; no alphabet outputs. Confidence gate remains 60%.
 - ${Object.values(audit.splits).reduce((a,b)=>a+b,0)} usable unique sequences: ${audit.splits.train} train, ${audit.splits.validation} validation, ${audit.splits.test} test.
-- Test top-1 accuracy: ${(report.test_accuracy*100).toFixed(2)}% (39/49).
+- Test top-1 accuracy: ${(report.test_accuracy*100).toFixed(2)}% (${Math.round(report.test_accuracy*audit.splits.test)}/${audit.splits.test}).
 - Macro F1: ${(report.classification_report['macro avg']['f1-score']*100).toFixed(2)}%.
 - Weighted F1: ${(report.classification_report['weighted avg']['f1-score']*100).toFixed(2)}%.
 - Early stopping completed ${report.history.loss.length} epochs and restored epoch ${best+1}, selected by validation loss. That epoch's validation accuracy: ${(report.history.val_accuracy[best]*100).toFixed(2)}%.
 - Random initialization, seed 42; no archived alphabet or legacy model weights were used.
 - Batch size 32, Adam 0.001, sparse categorical cross-entropy, inverse-frequency class weights, early stopping patience 18 and learning-rate reduction patience 6.
 - Training-only augmentation: three noisy/rotated copies per original. Augmented examples are not independent recordings.
-- Hello excluded: seven usable recordings, below the minimum of 12.
+- Excluded below minimum 12 usable recordings: ${Object.entries(report.excluded_insufficient).map(([label,n])=>`${label}: ${n}`).join('; ')}.
 
 | Label | Usable | Train | Test | Precision | Recall | F1 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -30,7 +33,7 @@ ${rows.join('\n')}
 
 ## Interpretation
 
-The new model works through the browser/backend integration, but recognition is not uniformly reliable. Help, Security, When and No_Gesture need recollection first. A 100% score on three or four clips does not prove reliable live recognition. Confidence is a softmax score, not a calibrated guarantee.
+Recognition is not uniformly reliable. Prioritize recollecting classes with low recall in the table above. A 100% score on three or four clips does not prove reliable live recognition. Confidence is a softmax score, not a calibrated guarantee. Do not compare the old 13-class accuracy directly with this expanded vocabulary.
 
 Splits are chronological within each label after normalized-content deduplication. No signer/session IDs exist. These recordings were inspected in earlier development, so this is a development holdout, not a new blind evaluation. No test records or pretrained weights were used in this run's optimization. A new participant-held-out dataset is required before claiming generalization. The old 92.857% result used 39 classes and a different test composition; it is not directly comparable.
 

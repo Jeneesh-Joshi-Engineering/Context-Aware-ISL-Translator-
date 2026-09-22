@@ -1,20 +1,11 @@
-# Active browser model: words_v4
+# Active browser model: words_v5
 
-This is a word-only BiLSTM trained from scratch using the current raw-data folders. The deployed input is [batch,30,126]; output is 13 classes: Counter, Entrance, Exit, Help, Money, No_Gesture, Police, Receipt, Security, Ticket, Train, When, Where.
+Word-only BiLSTM trained from scratch on 582 usable unique recordings (408 train / 87 validation / 87 test). Input [batch,30,126], output 23 words plus No_Gesture in model_metadata.json order. Confidence gate: 60%.
 
-The 39-class alphabet experiment and its earlier incomplete run are archived in `model-training/archive/alphabet-expanded-v3`. Its results do not describe the active model.
+Test accuracy: 68/87 (78.16%). Chronological development holdout without signer IDs, not signer-independent or live-camera evaluation. Flight, Pay and When had zero recall on their small test subsets. See ../../docs/word-model-results.md for complete metrics.
 
-Architecture: BiLSTM(64, sequences) → Dropout(0.3) → BiLSTM(32) → Dropout(0.3) → Dense(32, ReLU) → Dense(13, softmax). Recurrent activation is sigmoid. Seed 42; 331 usable unique recordings; 233/49/49 chronological split. Test accuracy is 39/49 (79.59%). This is a development holdout without signer IDs, not a blind participant-independent evaluation.
+Python/TF.js parity passed all 87 held-out sequences (max probability difference 2.98e-7). The previous browser model is archived under model-training/archive/words-v4/browser-model. Diagnostic fixtures are selected training recordings, not test-accuracy evidence.
 
-See `docs/word-model-results.md` for per-class weaknesses and `saved_model/words_v4` for data audit, trained binary weights, tensor specifications, split manifest, Python predictions, and training history.
-
-Reproduce export from the repository root:
-
-```powershell
-node scripts/export-expanded-model.mjs words_v4 --check-only
-node scripts/export-expanded-model.mjs words_v4
-npm run assets
-node tests/model.test.mjs
-```
-
-The exporter verifies Python/TF.js probabilities on all 49 held-out examples (maximum difference 2.384185791015625e-7) and checks one curated training example per label. Training examples validate wiring only; they are not evidence of generalization. The frontend never loads the archived alphabet model.
+Verify: node scripts/export-expanded-model.mjs words_v5 --check-only
+Export: node scripts/export-expanded-model.mjs words_v5
+Assets: npm run assets

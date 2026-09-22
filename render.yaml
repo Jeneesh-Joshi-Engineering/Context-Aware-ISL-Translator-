@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: isl-bridge-prototype
+    runtime: docker
+    plan: free
+    branch: prototype-in-deployment
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: DEPLOYMENT_ACCESS_CODE
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+      - key: COUNTER_STORE
+        value: /app/data/counters.json

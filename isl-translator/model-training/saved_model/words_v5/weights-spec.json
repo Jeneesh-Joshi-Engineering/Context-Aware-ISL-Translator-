@@ -1,0 +1,140 @@
+[
+  {
+    "index": 0,
+    "shape": [
+      126,
+      256
+    ],
+    "byteOffset": 0,
+    "byteLength": 129024
+  },
+  {
+    "index": 1,
+    "shape": [
+      64,
+      256
+    ],
+    "byteOffset": 129024,
+    "byteLength": 65536
+  },
+  {
+    "index": 2,
+    "shape": [
+      256
+    ],
+    "byteOffset": 194560,
+    "byteLength": 1024
+  },
+  {
+    "index": 3,
+    "shape": [
+      126,
+      256
+    ],
+    "byteOffset": 195584,
+    "byteLength": 129024
+  },
+  {
+    "index": 4,
+    "shape": [
+      64,
+      256
+    ],
+    "byteOffset": 324608,
+    "byteLength": 65536
+  },
+  {
+    "index": 5,
+    "shape": [
+      256
+    ],
+    "byteOffset": 390144,
+    "byteLength": 1024
+  },
+  {
+    "index": 6,
+    "shape": [
+      128,
+      128
+    ],
+    "byteOffset": 391168,
+    "byteLength": 65536
+  },
+  {
+    "index": 7,
+    "shape": [
+      32,
+      128
+    ],
+    "byteOffset": 456704,
+    "byteLength": 16384
+  },
+  {
+    "index": 8,
+    "shape": [
+      128
+    ],
+    "byteOffset": 473088,
+    "byteLength": 512
+  },
+  {
+    "index": 9,
+    "shape": [
+      128,
+      128
+    ],
+    "byteOffset": 473600,
+    "byteLength": 65536
+  },
+  {
+    "index": 10,
+    "shape": [
+      32,
+      128
+    ],
+    "byteOffset": 539136,
+    "byteLength": 16384
+  },
+  {
+    "index": 11,
+    "shape": [
+      128
+    ],
+    "byteOffset": 555520,
+    "byteLength": 512
+  },
+  {
+    "index": 12,
+    "shape": [
+      64,
+      32
+    ],
+    "byteOffset": 556032,
+    "byteLength": 8192
+  },
+  {
+    "index": 13,
+    "shape": [
+      32
+    ],
+    "byteOffset": 564224,
+    "byteLength": 128
+  },
+  {
+    "index": 14,
+    "shape": [
+      32,
+      24
+    ],
+    "byteOffset": 564352,
+    "byteLength": 3072
+  },
+  {
+    "index": 15,
+    "shape": [
+      24
+    ],
+    "byteOffset": 567424,
+    "byteLength": 96
+  }
+]

@@ -7,7 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/sessions")
-@CrossOrigin(origins = "*")
+
 public class SessionController {
     private final SessionService sessions;
     private final com.isl.backend.counter.CounterService counters;

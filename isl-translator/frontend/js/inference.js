@@ -142,7 +142,7 @@ export async function createInference({
       result = model.predict(input);
       const output = singleOutputTensor(result);
       const scores = Array.from(await output.data());
-      if (scores.length !== labels.length || scores.some(score => !Number.isFinite(score))) throw new Error("Model output does not match the four-class vocabulary.");
+      if (scores.length !== labels.length || scores.some(score => !Number.isFinite(score))) throw new Error("Model output does not match the deployed vocabulary.");
       const index = argmax(scores);
       return { label: labels[index], confidence: scores[index], scores, latencyMs: performance.now() - start };
     } finally {

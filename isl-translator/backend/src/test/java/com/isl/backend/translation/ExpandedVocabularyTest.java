@@ -7,7 +7,7 @@ class ExpandedVocabularyTest {
     private final TemplateFallbackAgent fallback = new TemplateFallbackAgent();
 
     @Test void expandedWordsHaveBothLanguages() {
-        for (String word : new String[]{"Counter", "Entrance", "Exit", "Help", "Money", "Police", "Receipt", "Security", "Ticket", "Train", "When", "Where"}) {
+        for (String word : new String[]{"Bus", "Cancel", "Flight", "Late", "Lost", "Luggage", "Medical_Help", "Pay", "Seat", "Time", "What_Time", "Counter", "Entrance", "Exit", "Help", "Money", "Police", "Receipt", "Security", "Ticket", "Train", "When", "Where"}) {
             var result = fallback.bilingual(word, "en", false);
             assertFalse(result.englishText().isBlank(), word);
             assertTrue(result.hindiText().matches("(?s).*[\\u0900-\\u097F].*"), word);

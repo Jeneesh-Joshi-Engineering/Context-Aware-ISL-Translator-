@@ -1,0 +1,45 @@
+{
+  "model_type": "BiLSTM",
+  "version": "words_v4",
+  "num_classes": 13,
+  "num_frames": 30,
+  "num_features": 126,
+  "input_shape": [
+    30,
+    126
+  ],
+  "label_mapping": {
+    "Counter": 0,
+    "Entrance": 1,
+    "Exit": 2,
+    "Help": 3,
+    "Money": 4,
+    "No_Gesture": 5,
+    "Police": 6,
+    "Receipt": 7,
+    "Security": 8,
+    "Ticket": 9,
+    "Train": 10,
+    "When": 11,
+    "Where": 12
+  },
+  "output_classes": [
+    "Counter",
+    "Entrance",
+    "Exit",
+    "Help",
+    "Money",
+    "No_Gesture",
+    "Police",
+    "Receipt",
+    "Security",
+    "Ticket",
+    "Train",
+    "When",
+    "Where"
+  ],
+  "confidence_threshold": 0.6,
+  "test_accuracy": 0.7959183673469388,
+  "training_epochs": 25,
+  "evaluation_scope": "chronological within each class after content deduplication; no signer IDs available; NOT signer-independent"
+}

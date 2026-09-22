@@ -1,0 +1,127 @@
+{
+  "heldoutSequences": 87,
+  "maxProbabilityDifference": 2.980232238769531e-7,
+  "passed": true,
+  "trainingExampleDiagnostics": [
+    {
+      "expected": "Bus",
+      "predicted": "Bus",
+      "confidence": 0.9927776455879211
+    },
+    {
+      "expected": "Cancel",
+      "predicted": "Cancel",
+      "confidence": 0.9698182940483093
+    },
+    {
+      "expected": "Counter",
+      "predicted": "Counter",
+      "confidence": 0.9782959818840027
+    },
+    {
+      "expected": "Entrance",
+      "predicted": "Entrance",
+      "confidence": 0.9805970788002014
+    },
+    {
+      "expected": "Exit",
+      "predicted": "Exit",
+      "confidence": 0.9791520237922668
+    },
+    {
+      "expected": "Flight",
+      "predicted": "Flight",
+      "confidence": 0.9831051230430603
+    },
+    {
+      "expected": "Help",
+      "predicted": "Help",
+      "confidence": 0.9928922653198242
+    },
+    {
+      "expected": "Late",
+      "predicted": "Late",
+      "confidence": 0.9729674458503723
+    },
+    {
+      "expected": "Lost",
+      "predicted": "Lost",
+      "confidence": 0.9803175926208496
+    },
+    {
+      "expected": "Luggage",
+      "predicted": "Luggage",
+      "confidence": 0.9782882928848267
+    },
+    {
+      "expected": "Medical_Help",
+      "predicted": "Medical_Help",
+      "confidence": 0.9700132012367249
+    },
+    {
+      "expected": "Money",
+      "predicted": "Money",
+      "confidence": 0.9712797403335571
+    },
+    {
+      "expected": "No_Gesture",
+      "predicted": "No_Gesture",
+      "confidence": 0.9370227456092834
+    },
+    {
+      "expected": "Pay",
+      "predicted": "Pay",
+      "confidence": 0.9340165257453918
+    },
+    {
+      "expected": "Police",
+      "predicted": "Police",
+      "confidence": 0.9819647669792175
+    },
+    {
+      "expected": "Receipt",
+      "predicted": "Receipt",
+      "confidence": 0.9766095280647278
+    },
+    {
+      "expected": "Seat",
+      "predicted": "Seat",
+      "confidence": 0.9800822138786316
+    },
+    {
+      "expected": "Security",
+      "predicted": "Security",
+      "confidence": 0.9917951226234436
+    },
+    {
+      "expected": "Ticket",
+      "predicted": "Ticket",
+      "confidence": 0.9769666790962219
+    },
+    {
+      "expected": "Time",
+      "predicted": "Time",
+      "confidence": 0.9641295671463013
+    },
+    {
+      "expected": "Train",
+      "predicted": "Train",
+      "confidence": 0.9902862906455994
+    },
+    {
+      "expected": "What_Time",
+      "predicted": "What_Time",
+      "confidence": 0.9804186224937439
+    },
+    {
+      "expected": "When",
+      "predicted": "When",
+      "confidence": 0.9197452068328857
+    },
+    {
+      "expected": "Where",
+      "predicted": "Where",
+      "confidence": 0.9821365475654602
+    }
+  ]
+}
