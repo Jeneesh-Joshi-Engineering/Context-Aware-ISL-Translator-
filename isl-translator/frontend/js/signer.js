@@ -9,6 +9,10 @@ let waitTimer, joinVersion = 0, modelLoading = false;
 setupShared({ chatLog: $('chatLog'), statusStrip: $('statusStrip'), reconnecting: $('reconnecting'), role: 'SIGNER' });
 function state(id, text, kind = '') { $(id).textContent = text; $(id).dataset.state = kind; }
 const error = e => showError('appError', e);
+if (!window.isSecureContext) {
+  $('deviceNotice').textContent = 'Phone camera access requires the secure HTTPS phone link. Ask the official to start Phone Access and scan the new QR. A laptop’s localhost address or a plain HTTP Wi-Fi address will not work on your phone.';
+  $('deviceNotice').hidden = false;
+}
 
 async function prepareModel() {
   if (inference) return inference;
@@ -86,7 +90,13 @@ function processFrame(now) {
 async function openConversation(id, counter) {
   ended = false; sessionId = id; counterId = counter || null;
   ws = await connectSession(id, 'SIGNER');
-  if (counter) { showPanel('translate'); startCapture(); }
+  if (counter) {
+    showPanel('translate');
+    // Mobile permissions and video playback are most reliable from an explicit tap.
+    if (matchMedia('(pointer: coarse)').matches) {
+      $('cameraHint').textContent = 'Tap Start / retry camera below, then allow camera access.';
+    } else startCapture();
+  }
 }
 async function joinCounter(code, version = ++joinVersion) {
   const normalized = code.trim().toUpperCase();
@@ -137,7 +147,7 @@ $('retryCamera').onclick = startCapture;
 $('retryModel').onclick = async () => { inference?.dispose(); inference = null; await prepareModel().catch(() => {}); if (stream?.active) startCapture(); };
 $('endSession').onclick = endSession; $('cancelInvite').onclick = endSession;
 $('cancelWait').onclick = () => { joinVersion++; clearTimeout(waitTimer); showPanel('landing'); };
-window.addEventListener('isl-status', e => { if (!ended && sessionId && !counterId && e.detail.officialConnected && !$('invite').hidden) { showPanel('translate'); startCapture(); } });
+window.addEventListener('isl-status', e => { if (!ended && sessionId && !counterId && e.detail.officialConnected && !$('invite').hidden) { showPanel('translate'); if (!matchMedia('(pointer: coarse)').matches) startCapture(); else $('cameraHint').textContent = 'Tap Start / retry camera below, then allow camera access.'; } });
 window.addEventListener('isl-connection', e => { state('connectionState', e.detail.connected ? 'Connected' : 'Reconnecting…', e.detail.connected ? 'ready' : ''); if (e.detail.connected) inference?.reset(); });
 window.addEventListener('isl-message', e => { if (e.detail.originRole === 'SIGNER') $('translationState').textContent = 'Translation delivered to both devices.'; });
 window.addEventListener('isl-error', e => error(e.detail));

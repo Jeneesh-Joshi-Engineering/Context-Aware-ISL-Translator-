@@ -20,6 +20,6 @@ public class HealthController {
     }
     @GetMapping("/api/health") public Map<String, Object> health() {
         return Map.of("status", "ok", "translationMode", geminiConfigured ? "gemini-with-fallback" : "template-fallback",
-            "vocabulary", vocabulary);
+            "vocabulary", vocabulary, "audioTranscriptionConfigured", geminiConfigured);
     }
 }

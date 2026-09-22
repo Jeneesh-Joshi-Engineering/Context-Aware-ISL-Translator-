@@ -24,7 +24,7 @@ No Live Server, Python server, separate ML server, or separate frontend server i
 4. Watch the Camera, Recognition and Connection indicators separately. Both screens receive the same English message. The official can type a reply or select English/Hindi, press Listen, speak, Stop, review and Send. Both screens show English and Hindi. Browser speech recognition may need internet.
 5. End the conversation. The official screen returns to Ready; the same counter QR can serve the next visitor. A second visitor sees Busy until the counter is free.
 
-For two physical devices, use a trusted **HTTPS deployment** accessible to both. `localhost` refers to the device opening it; a phone cannot use the laptop's localhost QR. Plain HTTP over a LAN IP does not provide the secure context required for camera capture. Keep the same public origin when printing a permanent QR.
+For a signer on Android Chrome, keep the server running and run `.\Start-PhoneAccess.ps1` in a second PowerShell window. Open the generated HTTPS address with `/official.html`, or paste its base address into **Use a signer's phone / set phone link** on the local official screen. Scan the updated QR, tap **Start / retry camera**, and allow access. Keep both terminals open; the temporary URL changes after restarting the tunnel. `localhost` and plain HTTP LAN addresses cannot provide phone camera access. See the [phone and speech guide](isl-translator/docs/mentor-suggestions.md) for complete steps and permanent-deployment limits.
 
 ## Verify before presenting
 
@@ -61,5 +61,7 @@ Counter identifiers persist in `isl-translator/backend/data/counters.json` when 
 See the [faculty demo guide](isl-translator/docs/demo-guide.md) for troubleshooting and the [backend guide](isl-translator/backend/README.md) for endpoints and packaging.
 
 ## Faculty finishing pass
+
+The [mentor refinements guide](isl-translator/docs/mentor-suggestions.md) covers Android phone access, microphone recording through Gemini, browser dictation, and verification results. With a configured key, recorded Gemini speech is selected by default; review the transcript before sending. The verified model default is now `gemini-3.6-flash` because the API rejected the previous model for this account. Update existing `.env` files and restart; keys stay local and ignored.
 
 See [speech and bilingual setup/verification](isl-translator/docs/transcription-and-bilingual.md) and the [path-to-market punch list](isl-translator/docs/path-to-market.md). Arbitrary bilingual replies require a working Gemini configuration. The offline phrasebook supports the listed counter phrases; unsupported messages preserve the source and explicitly show translation unavailable.

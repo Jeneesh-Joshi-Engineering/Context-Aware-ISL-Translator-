@@ -7,7 +7,7 @@ export function createSpeechController({ Recognition, onDraft, onState, getDraft
     'audio-capture': 'No microphone is available. Check its connection and whether another app is using it.',
     'not-allowed': 'Microphone access is blocked. Allow microphone access for this site in your browser settings.',
     'service-not-allowed': 'Speech recognition is blocked by this browser or device policy. You can type your reply.',
-    network: 'The speech service could not connect. Check your internet connection or type your reply.',
+    network: 'The browser speech service could not connect. Try Record with Gemini in Voice input, check your internet connection, or type your reply.',
     'language-not-supported': 'This speech service does not support the selected language. Try another language or type your reply.',
     aborted: 'Listening stopped. Review your reply before sending.'
   };
@@ -53,7 +53,7 @@ export function createSpeechController({ Recognition, onDraft, onState, getDraft
         timer = schedule(() => launch(token), 250);
       } else finish(failure || (!hadResult && !draft() ? messages['no-speech'] : undefined));
     };
-    try { recognition.start(); } catch { finish('Could not start speech recognition. Check microphone permission or type your reply.'); }
+    try { recognition.start(); } catch { finish('Could not start speech recognition. Check microphone permission or try Record with Gemini.'); }
   }
   return {
     get active() { return wanted || !!current; },

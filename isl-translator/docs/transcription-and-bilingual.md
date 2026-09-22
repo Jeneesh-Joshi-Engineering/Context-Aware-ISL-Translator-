@@ -1,5 +1,7 @@
 # Transcription and bilingual finishing pass
 
+**Current update:** see [mentor refinements](mentor-suggestions.md) for the new recorded-audio option, verified `gemini-3.6-flash` configuration, Android HTTPS launcher and the latest verification limits. The original browser-dictation checks below remain relevant to that selectable mode.
+
 ## Diagnosis
 
 The old official client left `continuous` at its single-result default, read only `event.results[event.resultIndex]`, overwrote the reply field, and immediately sent each final fragment. It had no restart after a speech-service end and only used `en-IN`. These are confirmed code defects that can truncate speech at pauses or lose result segments. They do not prove which browser, permission or microphone condition caused a particular user's failed attempt.
