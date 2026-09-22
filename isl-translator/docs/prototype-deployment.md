@@ -24,6 +24,8 @@ Local Java package: 21 tests passed. JavaScript/model tests: 11 passed. Recorded
 
 Earlier Android Chrome testing was confirmed by the user for the previous model. New-model unseen-person/live-camera testing and Hindi microphone accuracy remain unmeasured. Earlier real Gemini tests passed sampled bilingual text and synthetic English audio but also encountered provider 429/503 errors; uninterrupted availability is not claimed.
 
+Latest words_v5 provider check: synthetic English audio transcribed as "Please go to platform 3. The train arrives in 10 minutes." The subsequent general translation failed with provider HTTP 429 (rate/quota limit). Offline word phrases still pass. This provider limit must be resolved or allowed to reset before claiming general speech translation availability; no billing change was made.
+
 ## Next 48 hours of dataset work
 
 Strengthen existing labels before adding many more. Record 20–30 additional independent clips per priority word, across several people and two sessions, varying lighting and distance. Record signer/session IDs separately to hold out an untouched participant.

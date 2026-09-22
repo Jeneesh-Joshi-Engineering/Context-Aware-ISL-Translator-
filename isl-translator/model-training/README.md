@@ -1,5 +1,7 @@
 # Dataset Creation Pipeline
 
+> Historical preparation pipeline below. The active words_v5 model uses the repository-root `scripts/train-expanded-model.py` and `scripts/export-expanded-model.mjs`, discovers word labels from exports, and does not use the legacy three-label restriction below. See `../docs/word-model-results.md` and `../docs/prototype-deployment.md` for current data, evaluation and collection priorities. Do not rerun into an existing saved run; choose a new version.
+
 This folder contains the Python-only dataset preparation pipeline for ISL landmark exports.
 
 ## Raw Input
