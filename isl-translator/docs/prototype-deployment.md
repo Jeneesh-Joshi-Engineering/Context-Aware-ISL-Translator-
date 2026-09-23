@@ -8,6 +8,8 @@ Training: 582 unique usable recordings; 408 train, 87 validation, 87 test. Test 
 
 ## Permanent HTTPS hosting
 
+Live prototype: https://isl-bridge-prototype.onrender.com/official.html. Render deployed branch prototype-in-deployment at commit a80a1f3273927e8439ddc69d2b95c5ae2033eb30 on 23 September 2026. The cloud Docker build passed its Java tests; public health reported the 23-word vocabulary. Authenticated browser diagnostics passed MediaPipe initialization and all 23 recorded glosses through the hosted bilingual pipeline. These selected recorded inputs are integration evidence, not an independent accuracy test. An anonymous API request returned HTTP 401. General Gemini availability remains subject to the provider limits described below.
+
 The root Dockerfile builds browser dependencies, runs Java tests, and serves frontend, API and WebSockets from one Java process. render.yaml defines a free Render web service on this branch. PORT comes from the host. No local .env, raw training dataset, or archived model is copied into the image. The server runs as a non-root user.
 
 Render configuration: Web Service; this repository; branch prototype-in-deployment; Docker runtime; repository root context; Dockerfile ./Dockerfile; Free instance; health check /api/health. Set GEMINI_API_KEY as a secret, GEMINI_MODEL=gemini-3.6-flash, COUNTER_STORE=/app/data/counters.json, and DEPLOYMENT_ACCESS_CODE to a random secret of at least 24 characters. The Blueprint can generate the access code. Never commit these values or paste them into chat.
