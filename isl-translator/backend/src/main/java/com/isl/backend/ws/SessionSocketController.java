@@ -44,8 +44,12 @@ public class SessionSocketController {
                 return java.util.concurrent.CompletableFuture.completedFuture(null);
             }
             return gemini.bilingual(source, language, official, history)
-                .exceptionally(error -> fallback.bilingual(source, language, official))
-                .thenAccept(text -> { if (sessions.get(sessionId) == session) publishTranslation(sessionId, text.message(official ? "OFFICIAL" : "SIGNER")); });
+                .handle((text, error) -> {
+                    var payload = (error == null ? text : fallback.bilingual(source, language, official)).message(official ? "OFFICIAL" : "SIGNER");
+                    if (error != null) payload.translationWarning = GeminiClient.failureMessage(error);
+                    return payload;
+                })
+                .thenAccept(payload -> { if (sessions.get(sessionId) == session) publishTranslation(sessionId, payload); });
         });
     }
     public void broadcastStatus(String sessionId) { SessionStatusPayload status = sessions.status(sessionId); if (status != null) publish(sessionId, new MessageEnvelope<>("SESSION_STATUS", sessionId, "SYSTEM", status)); }

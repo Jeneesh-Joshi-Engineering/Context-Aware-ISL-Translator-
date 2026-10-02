@@ -14,6 +14,36 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
 class BilingualClientTest {
+    @Test void quotaFailureIsNotRetriedAndPausesSubsequentRequests() throws Exception {
+        var attempts = new AtomicInteger();
+        var client = new GeminiClient(WebClient.builder().exchangeFunction(request -> {
+            attempts.incrementAndGet();
+            return reactor.core.publisher.Mono.just(org.springframework.web.reactive.function.client.ClientResponse
+                .create(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS).header("Retry-After", "120")
+                .header("Content-Type", "application/json").body("{\"error\":{\"details\":[{\"retryDelay\":\"120s\"}]}}").build());
+        }), new GeminiRequestBuilder(), "test-key", "http://example.test", "model", 3000);
+        var error = assertThrows(java.util.concurrent.CompletionException.class,
+            () -> client.bilingual("Help", "en-IN", false, List.of()).join());
+        assertTrue(GeminiClient.failureMessage(error).contains("quota or rate limit"));
+        var cooldown = assertThrows(java.util.concurrent.CompletionException.class,
+            () -> client.bilingual("Train", "en-IN", false, List.of()).join());
+        assertTrue(GeminiClient.failureMessage(cooldown).contains("cooldown"));
+        assertThrows(java.util.concurrent.CompletionException.class,
+            () -> client.transcribe(new byte[]{1}, "audio/webm", "en-IN").join());
+        assertEquals(1, attempts.get(), "Quota failures must not multiply provider requests");
+    }
+    @Test void missingModelHasActionableWarningAndIsNotRetried() {
+        var attempts = new AtomicInteger();
+        var client = new GeminiClient(WebClient.builder().exchangeFunction(request -> {
+            attempts.incrementAndGet();
+            return reactor.core.publisher.Mono.just(org.springframework.web.reactive.function.client.ClientResponse
+                .create(org.springframework.http.HttpStatus.NOT_FOUND).build());
+        }), new GeminiRequestBuilder(), "test-key", "http://example.test", "model", 3000);
+        var error = assertThrows(java.util.concurrent.CompletionException.class,
+            () -> client.bilingual("Help", "en-IN", false, List.of()).join());
+        assertTrue(GeminiClient.failureMessage(error).contains("GEMINI_MODEL"));
+        assertEquals(1, attempts.get());
+    }
     @Test void structuredProviderResponseIsValidatedInBothDirections() throws Exception {
         var mapper=new ObjectMapper(); var body=new AtomicReference<String>();var key=new AtomicReference<String>();
         var content=new AtomicReference<>("{\"englishText\":\"Please wait here.\",\"hindiText\":\"कृपया यहाँ प्रतीक्षा करें।\"}");

@@ -33,6 +33,10 @@ export function renderMessage(payload) {
   } else if (payload.translationMode === 'offline-phrase') {
     const note = document.createElement('div'); note.className = 'translation-note'; note.textContent = 'Offline phrase translation'; card.append(note);
   }
+  if (payload.translationWarning) {
+    const note = document.createElement('div'); note.className = 'translation-note warning';
+    note.textContent = payload.translationWarning; card.append(note);
+  }
   ui.chatLog.append(card); ui.chatLog.scrollTop = ui.chatLog.scrollHeight;
 }
 export async function connectSession(id, role) {

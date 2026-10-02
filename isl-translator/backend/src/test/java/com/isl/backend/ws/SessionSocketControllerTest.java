@@ -31,6 +31,8 @@ class SessionSocketControllerTest {
         assertEquals("Please wait here.",history.get(0).englishText); assertEquals("कृपया यहाँ प्रतीक्षा करें।",history.get(0).hindiText);
         assertEquals("Thank you.",history.get(1).englishText); assertEquals("धन्यवाद।",history.get(1).hindiText);
         assertEquals("offline-phrase", history.get(1).translationMode);
+        assertNull(history.get(0).translationWarning);
+        assertTrue(history.get(1).translationWarning.contains("Gemini translation failed"));
     }
     @Test void unsupportedOfflineTextPreservesSourceWithoutFakeHindi() {
         var fallback = new TemplateFallbackAgent();

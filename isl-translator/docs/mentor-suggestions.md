@@ -41,13 +41,15 @@ The server accepts only supported audio types, up to 4 MiB, for a session with a
 
 The local ignored `.env` file holds `GEMINI_API_KEY`. Do not put it in the frontend, screenshots or Git. Restart the backend after configuration changes.
 
-On 22 September 2026, the API rejected this project's `gemini-2.5-flash` configuration with HTTP 404 and explicitly recommended `gemini-3.6-flash`. The recommended replacement was tested successfully. `.env.example` and the application default now use that model. Existing clones must update their own `GEMINI_MODEL=gemini-3.6-flash`; application defaults do not override an existing `.env` value.
+On 22 September 2026, the API rejected this project's `gemini-2.5-flash` configuration with HTTP 404 and explicitly recommended `gemini-3.6-flash`. That replacement worked then, but returned HTTP 503 (high demand) repeatedly on 2 October. The current default is `gemini-3.1-flash-lite`, verified with real English/Hindi replies and a signer gloss through both WebSocket clients. Existing clones must update their own `GEMINI_MODEL=gemini-3.1-flash-lite`; application defaults do not override an existing `.env` value.
 
-Text translation has a configurable overall timeout (12 seconds by default); recorded-audio transcription has a 30-second provider timeout. Transient network/408/429/5xx failures get at most two retries within those overall deadlines. Authentication and unavailable-model errors are not retried. Sustained failures retain the original message and explicitly mark translation unavailable, or use a labelled supported offline phrase. A configured-key badge is not a claim of service availability.
+Text translation has a configurable overall timeout (12 seconds by default); recorded-audio transcription has a 30-second provider timeout. Transient network/408/5xx failures get at most two retries within those overall deadlines. HTTP 429 is not retried immediately: translation and audio share a cooldown of at least 60 seconds, extended by provider retry metadata. Authentication and unavailable-model errors are not retried. Sustained failures retain the original message and explicitly mark translation unavailable, or use a labelled supported offline phrase. Conversation messages also show a safe failure reason. A configured-key badge is not a claim of service availability.
 
 Live testing also encountered HTTP 503 (high demand) and HTTP 429 (rate/quota limit), including failed combined audio-and-translation runs. Successful individual audio and bilingual tests do not establish uninterrupted provider availability. Recorded mode uses one provider request for transcription and another after Send for translation; browser dictation uses the provider only for translation. If limits recur, wait for the account limit to reset, use browser dictation/typed supported offline phrases, or review the account quota. No billing changes were made. Backend warnings log only the failure category/status, never recordings, message bodies or keys.
 
 ## Verification
+
+2 October repair: 23 backend tests and 11 JavaScript tests passed. Live English-to-Hindi, Hindi-to-English and signer-gloss translation passed with `translationMode=gemini` on both clients. A separate recorded-audio check timed out at 30 seconds; audio reliability on the replacement model remains unverified. On this Windows sandbox, JavaScript tests used `node --test --test-isolation=none tests/*.test.mjs` because the default runner could not spawn child processes.
 
 ```powershell
 npm test

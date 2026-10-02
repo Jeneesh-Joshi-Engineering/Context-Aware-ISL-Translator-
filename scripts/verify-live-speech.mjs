@@ -40,7 +40,15 @@ try {
     assert.equal(language==='hi-IN'?result.hindiText:result.englishText,source);
     assert.ok(result.englishText);assert.match(result.hindiText,/[\u0900-\u097f]/);
   }
-  console.log('PASS: actual provider, original preserved, both clients agree. Audio source is the supplied recording, not a physical microphone test.');
+  const signerCount=received[0].filter(m=>m.type==='TRANSLATED_MESSAGE').length;
+  clients[1].publish({destination:`/app/session/${id}/keyword`,body:JSON.stringify({type:'KEYWORD_INPUT',sessionId:id,sender:'SIGNER',payload:{keyword:'Help',confidence:1}})});
+  await until(()=>received.every(messages=>messages.filter(m=>m.type==='TRANSLATED_MESSAGE').length>signerCount));
+  const signerResult=received[0].filter(m=>m.type==='TRANSLATED_MESSAGE').at(-1).payload;
+  assert.deepEqual(signerResult,received[1].filter(m=>m.type==='TRANSLATED_MESSAGE').at(-1).payload);
+  assert.equal(signerResult.originRole,'SIGNER');assert.equal(signerResult.translationMode,'gemini');
+  assert.ok(signerResult.englishText);assert.match(signerResult.hindiText,/[\u0900-\u097f]/);
+  console.log(JSON.stringify({source:'Help',...signerResult}));
+  console.log('PASS: actual provider, original preserved, both clients agree. ' + (process.argv[2] ? 'Audio verified with the supplied recording; physical microphone not tested.' : 'Audio transcription not tested.'));
 } finally {
   await api(`/api/sessions/${id}/end`,{method:'POST'}).catch(()=>{});
   await Promise.all(clients.map(c=>c.deactivate()));
